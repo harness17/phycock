@@ -1,0 +1,44 @@
+# Claude Code personal settings (DO NOT COMMIT)
+.claude/settings.local.json
+
+# .NET build outputs
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# ASP.NET Core Data Protection Keys (security sensitive)
+DataProtectionKeys/
+
+# Backup directories
+backup-*/
+
+# User-specific files
+*.user
+*.userprefs
+*.suo
+.DS_Store
+
+# Database
+*.mdf
+*.ldf
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+appsettings.Development.json
+
+# Dependencies
+node_modules/
+/packages/
+
+# Temporary files
+*.tmp
+*.log

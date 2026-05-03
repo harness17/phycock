@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Phycock</RootNamespace>
+    <AssemblyName>Phycock</AssemblyName>
+    <!-- Debug ビルドではアナライザーを無効化してビルド時間を短縮 -->
+    <RunAnalyzers Condition="'$(Configuration)' == 'Debug'">false</RunAnalyzers>
+    <!-- サテライトアセンブリを英語のみに限定して I/O を削減 -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- Debug ビルドでは Static Web Assets マニフェスト生成をスキップ -->
+    <StaticWebAssetsEnabled Condition="'$(Configuration)' == 'Debug'">false</StaticWebAssetsEnabled>
+    <!-- Debug では Razor のビルドタスクをスキップ（RuntimeCompilation が実行時にコンパイル） -->
+    <RazorCompileOnBuild Condition="'$(Configuration)' == 'Debug'">false</RazorCompileOnBuild>
+    <RazorCompileOnPublish Condition="'$(Configuration)' == 'Debug'">false</RazorCompileOnPublish>
+    <!-- Razor source generator も明示的に無効化 -->
+    <UseRazorSourceGenerator Condition="'$(Configuration)' == 'Debug'">false</UseRazorSourceGenerator>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.1.1" />
+    <!-- Bootstrap は wwwroot に手動配置するため NuGet 参照不要 -->
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+    <!-- EF Core Tools は設計時のみ使用 — PrivateAssets で依存ライブラリに含めない -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.0" />
+  </ItemGroup>
+</Project>

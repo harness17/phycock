@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Phycock/Phycock.csproj" />
+  <Project Path="CommonLibrary/CommonLibrary.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>
