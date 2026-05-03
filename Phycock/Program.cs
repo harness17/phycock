@@ -40,7 +40,7 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
     options.Password.RequireUppercase = true;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 5;
-    options.User.RequireUniqueEmail = false;
+    options.User.RequireUniqueEmail = IdentityOptionsSnapshot.RequireUniqueEmail;
 })
 .AddEntityFrameworkStores<DBContext>()
 .AddDefaultTokenProviders();
@@ -60,6 +60,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/LogOff";
+    options.AccessDeniedPath = "/RootError/StatusCode/403";
     options.ExpireTimeSpan = TimeSpan.FromMinutes(1440);
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
@@ -86,9 +87,21 @@ builder.Services.AddScoped<Phycock.Service.UserManagementService>();
 builder.Services.AddScoped<Phycock.Repository.NotificationRepository>();
 builder.Services.AddScoped<Phycock.Service.NotificationService>();
 
-// スケジュール
-builder.Services.AddScoped<Phycock.Repository.ScheduleRepository>();
-builder.Services.AddScoped<Phycock.Service.ScheduleService>();
+// 体調記録
+builder.Services.AddScoped<Phycock.Repository.HealthRecordRepository>();
+builder.Services.AddScoped<Phycock.Service.HealthRecordService>();
+
+// 睡眠記録
+builder.Services.AddScoped<Phycock.Repository.SleepRecordRepository>();
+builder.Services.AddScoped<Phycock.Service.SleepRecordService>();
+
+// 通所予定
+builder.Services.AddScoped<Phycock.Repository.ScheduleEntryRepository>();
+builder.Services.AddScoped<Phycock.Service.ScheduleEntryService>();
+
+// ダッシュボード・統計
+builder.Services.AddScoped<Phycock.Service.DashboardService>();
+builder.Services.AddScoped<Phycock.Service.StatisticsService>();
 
 // AutoMapper
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies()));
@@ -113,15 +126,12 @@ await using (var scope = app.Services.CreateAsyncScope())
     await SeedAsync(sp);
 }
 
-if (app.Environment.IsDevelopment())
+// 体調・通所データを扱うため、環境に関わらず内部例外は画面へ露出させない。
+// 詳細はログに残し、利用者には共通エラーページを表示する。
+app.UseExceptionHandler("/RootError/Error");
+
+if (!app.Environment.IsDevelopment())
 {
-    // 開発環境: 例外詳細（スタックトレース）をブラウザに表示する
-    app.UseDeveloperExceptionPage();
-}
-else
-{
-    // 本番環境: カスタムエラーページにリダイレクトし、例外情報をログに記録する
-    app.UseExceptionHandler("/RootError/Error");
     app.UseHsts();
 }
 

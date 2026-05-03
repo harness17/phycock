@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -Command \"$json = $input | ConvertFrom-Json; $filePath = $json.tool_input.file_path ?? $json.tool_response.filePath; if ($filePath -match '\\.cs$') { Write-Host \\\"Formatting: $filePath\\\"; dotnet format \\\"$filePath\\\" --no-restore 2>&1 | Select-Object -First 10; } else { Write-Host \\\"Skipping non-C# file: $filePath\\\" }\"",
+            "timeout": 60,
+            "statusMessage": "Formatting C# code..."
+          }
+        ]
+      }
+    ]
+  }
+}

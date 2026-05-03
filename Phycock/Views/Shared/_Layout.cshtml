@@ -26,7 +26,16 @@
                             <a class="nav-link text-white" asp-controller="Home" asp-action="Index">ホーム</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white" asp-controller="Schedule" asp-action="Index">スケジュール</a>
+                            <a class="nav-link text-white" asp-controller="HealthRecord" asp-action="Index">体調記録</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="SleepRecord" asp-action="Index">睡眠記録</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="ScheduleEntry" asp-action="Index">通所スケジュール</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" asp-controller="Statistics" asp-action="Index">統計</a>
                         </li>
                         @* ポイント: Admin ロールのみ表示する管理メニュー *@
                         @if (User.IsInRole("Admin"))
@@ -37,6 +46,10 @@
                         }
                     </ul>
                     <ul class="navbar-nav align-items-center">
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
+                        {
+                            @await Html.PartialAsync("_TargetUserSelectorPartial")
+                        }
                         @* ポイント: 認証済みユーザーのみ通知ベルを表示する *@
                         @if (User.Identity?.IsAuthenticated == true)
                         {

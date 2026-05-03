@@ -48,6 +48,7 @@ namespace Phycock.Models
         public bool LockoutEnabled { get; set; }
         // ポイント: LockoutEnd はロックアウト解除日時。現在時刻と比較してロック中かどうかを判定する
         public DateTimeOffset? LockoutEnd { get; set; }
+        public bool IsDisabled { get; set; }
         public bool EmailConfirmed { get; set; }
         // ポイント: ロールは Identity から非同期で取得するためサービス側で詰める
         public List<string> Roles { get; set; } = new();
@@ -75,11 +76,14 @@ namespace Phycock.Models
         [Display(Name = "メール確認済み")]
         public bool EmailConfirmed { get; set; }
 
-        // ポイント: 選択中のロール名一覧（チェックボックスでバインドする）
+        [Required(ErrorMessage = "ロールは1つ選択してください。")]
         [Display(Name = "ロール")]
+        public string RoleName { get; set; } = "";
+
+        // ポイント: 削除確認など表示用途で現在のロール一覧を保持する
         public List<string> RoleNames { get; set; } = new();
 
-        // ポイント: 全ロール一覧（チェックボックス選択肢の生成に使用）
+        // ポイント: 全ロール一覧（ラジオボタン選択肢の生成に使用）
         public List<SelectListItem> AvailableRoles { get; set; } = new();
     }
 }

@@ -1,0 +1,15 @@
+@model Phycock.Models.ScheduleEntryFormViewModel
+
+<div class="modal-header">
+    <h5 class="modal-title">通所予定追加</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+</div>
+<form asp-action="Create" method="post" class="schedule-entry-form">
+    <div class="modal-body">
+        @await Html.PartialAsync("_FormFields", Model)
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">閉じる</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+    </div>
+</form>

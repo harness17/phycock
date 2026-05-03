@@ -23,6 +23,8 @@ namespace Phycock.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
+            Response.StatusCode = StatusCodes.Status500InternalServerError;
+
             // 例外情報を取得してログに記録する
             var exceptionFeature = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
             if (exceptionFeature?.Error != null)
@@ -49,6 +51,8 @@ namespace Phycock.Controllers
         [Route("RootError/StatusCode/{statusCode}")]
         public new IActionResult StatusCode(int statusCode)
         {
+            Response.StatusCode = statusCode;
+
             var model = new ErrorViewModel
             {
                 RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,

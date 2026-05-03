@@ -17,13 +17,19 @@ namespace Phycock.Service
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<ApplicationRole> _roleManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private const string SelectedMemberUserIdSessionKey = "SelectedMemberUserId";
+        public static readonly DateTimeOffset DisabledLockoutEnd =
+            new(new DateTime(9999, 12, 31, 23, 59, 59, DateTimeKind.Utc));
 
         public UserManagementService(
             UserManager<ApplicationUser> userManager,
-            RoleManager<ApplicationRole> roleManager)
+            RoleManager<ApplicationRole> roleManager,
+            IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -71,6 +77,7 @@ namespace Phycock.Service
                     Email          = user.Email ?? "",
                     LockoutEnabled = user.LockoutEnabled,
                     LockoutEnd     = user.LockoutEnd,
+                    IsDisabled     = IsDisabled(user),
                     EmailConfirmed = user.EmailConfirmed,
                     Roles          = roles.ToList(),
                 });
@@ -102,6 +109,7 @@ namespace Phycock.Service
                 UserName       = user.UserName ?? "",
                 Email          = user.Email ?? "",
                 EmailConfirmed = user.EmailConfirmed,
+                RoleName       = currentRoles.FirstOrDefault() ?? "",
                 RoleNames      = currentRoles.ToList(),
                 AvailableRoles = availableRoles,
             };
@@ -116,21 +124,30 @@ namespace Phycock.Service
             if (user == null)
                 return IdentityResult.Failed(new IdentityError { Description = "ユーザーが見つかりません。" });
 
+            var selectedRole = model.RoleName?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(selectedRole))
+                return IdentityResult.Failed(new IdentityError { Description = "ロールは1つ選択してください。" });
+
+            var roleExists = await _roleManager.RoleExistsAsync(selectedRole);
+            if (!roleExists)
+                return IdentityResult.Failed(new IdentityError { Description = "存在しないロールは選択できません。" });
+
+            if (user.Id == Const.SystemAdminUserId && selectedRole != ApplicationRoleType.Admin.ToString())
+                return IdentityResult.Failed(new IdentityError { Description = "初期管理者ユーザーの Admin ロールは変更できません。" });
+
             user.UserName       = model.UserName;
             user.Email          = model.Email;
             user.EmailConfirmed = model.EmailConfirmed;
+            user.ApplicationRoleName = selectedRole;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded) return updateResult;
 
-            // ポイント: ロールの差分更新（不要なロール削除 → 新規ロール追加）
+            // ポイント: 今回は兼任を扱わないため、ロールは常に1件へ収束させる
             var currentRoles  = await _userManager.GetRolesAsync(user);
-            var rolesToRemove = currentRoles.Except(model.RoleNames).ToList();
-            var rolesToAdd    = model.RoleNames.Except(currentRoles).ToList();
-
-            // ポイント: 初期 Admin ユーザーは Admin ロールを剥奪できない（システム管理上の制約）
-            if (user.Id == Const.SystemAdminUserId)
-                rolesToRemove.Remove("Admin");
+            var selectedRoles = new[] { selectedRole };
+            var rolesToRemove = currentRoles.Except(selectedRoles).ToList();
+            var rolesToAdd    = selectedRoles.Except(currentRoles).ToList();
 
             if (rolesToRemove.Any())
             {
@@ -148,19 +165,23 @@ namespace Phycock.Service
         }
 
         /// <summary>
-        /// ユーザーを削除する（初期 Admin ユーザーは削除不可）
+        /// ユーザーを無効化する（初期 Admin ユーザーは無効化不可）
         /// </summary>
-        public async Task<IdentityResult> DeleteUserAsync(string id)
+        public async Task<IdentityResult> DisableUserAsync(string id)
         {
-            // ポイント: 初期 Admin ユーザーはシステム管理上の必須アカウントのため削除を禁止する
+            // ポイント: 初期 Admin ユーザーはシステム管理上の必須アカウントのため無効化を禁止する
             if (id == Const.SystemAdminUserId)
-                return IdentityResult.Failed(new IdentityError { Description = "初期管理者ユーザーは削除できません。" });
+                return IdentityResult.Failed(new IdentityError { Description = "初期管理者ユーザーは無効化できません。" });
 
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
                 return IdentityResult.Failed(new IdentityError { Description = "ユーザーが見つかりません。" });
 
-            return await _userManager.DeleteAsync(user);
+            user.LockoutEnabled = true;
+            user.LockoutEnd = DisabledLockoutEnd;
+            user.AccessFailedCount = 0;
+
+            return await _userManager.UpdateAsync(user);
         }
 
         /// <summary>
@@ -169,6 +190,56 @@ namespace Phycock.Service
         public void FillAvailableRoles(UserManagementEditViewModel model)
         {
             model.AvailableRoles = GetAvailableRoles();
+            if (string.IsNullOrWhiteSpace(model.RoleName) && model.RoleNames.Count == 1)
+                model.RoleName = model.RoleNames[0];
+        }
+
+        /// <summary>
+        /// Member ロールのユーザーを選択肢として取得する。
+        /// </summary>
+        public async Task<List<SelectListItem>> GetMemberListAsync()
+        {
+            var users = await _userManager.GetUsersInRoleAsync(ApplicationRoleType.Member.ToString());
+            return users
+                .Where(x => !IsDisabled(x))
+                .OrderBy(x => x.UserName)
+                .Select(x => new SelectListItem
+                {
+                    Value = x.Id,
+                    Text = x.UserName ?? x.Email ?? x.Id,
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// Admin が現在操作対象にしている Member ID を取得する。未選択の場合は先頭の Member を選ぶ。
+        /// </summary>
+        public async Task<string> GetSelectedMemberUserIdAsync()
+        {
+            var users = await GetMemberListAsync();
+            if (!users.Any()) return "";
+
+            var session = _httpContextAccessor.HttpContext?.Session;
+            var selectedUserId = session?.GetString(SelectedMemberUserIdSessionKey);
+            if (!string.IsNullOrWhiteSpace(selectedUserId) && users.Any(x => x.Value == selectedUserId))
+                return selectedUserId;
+
+            selectedUserId = users[0].Value ?? "";
+            if (!string.IsNullOrWhiteSpace(selectedUserId))
+                session?.SetString(SelectedMemberUserIdSessionKey, selectedUserId);
+
+            return selectedUserId;
+        }
+
+        /// <summary>
+        /// Admin が操作対象にする Member ID を保存する。Member 以外は保存しない。
+        /// </summary>
+        public async Task SetSelectedMemberUserIdAsync(string targetUserId)
+        {
+            var users = await GetMemberListAsync();
+            if (!users.Any(x => x.Value == targetUserId)) return;
+
+            _httpContextAccessor.HttpContext?.Session.SetString(SelectedMemberUserIdSessionKey, targetUserId);
         }
 
         // ポイント: ロール選択肢を名前順で返す共通処理
@@ -178,5 +249,8 @@ namespace Phycock.Service
                 .OrderBy(r => r.Name)
                 .Select(r => new SelectListItem { Value = r.Name, Text = r.Name })
                 .ToList();
+
+        public static bool IsDisabled(ApplicationUser user)
+            => user.LockoutEnabled && user.LockoutEnd.HasValue && user.LockoutEnd.Value >= DisabledLockoutEnd;
     }
 }

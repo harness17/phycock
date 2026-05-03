@@ -42,10 +42,14 @@ namespace Phycock.Common
         // 通知
         public DbSet<NotificationEntity> Notification { get; set; }
 
-        // スケジュール
-        public DbSet<ScheduleEventEntity> ScheduleEvent { get; set; }
-        public DbSet<ScheduleEventEntityHistory> ScheduleEventHistory { get; set; }
-        public DbSet<ScheduleEventParticipantEntity> ScheduleEventParticipant { get; set; }
+        // 体調記録
+        public DbSet<HealthRecordEntity> HealthRecord { get; set; }
+
+        // 睡眠記録
+        public DbSet<SleepRecordEntity> SleepRecord { get; set; }
+
+        // 通所予定
+        public DbSet<ScheduleEntryEntity> ScheduleEntry { get; set; }
 
         #endregion
     }

@@ -1,0 +1,14 @@
+@model Phycock.Models.SleepRecordListViewModel
+
+<dl class="row mb-0">
+    <dt class="col-4">記録日</dt>
+    <dd class="col-8">@Model.RecordDate.ToString("yyyy/MM/dd")</dd>
+    <dt class="col-4">種別</dt>
+    <dd class="col-8">@Model.SleepType.GetDisplayName()</dd>
+    <dt class="col-4">開始</dt>
+    <dd class="col-8">@Model.StartDate.ToString("yyyy/MM/dd HH:mm")</dd>
+    <dt class="col-4">終了</dt>
+    <dd class="col-8">@(Model.EndDate?.ToString("yyyy/MM/dd HH:mm") ?? "-")</dd>
+    <dt class="col-4">メモ</dt>
+    <dd class="col-8">@Model.Memo</dd>
+</dl>

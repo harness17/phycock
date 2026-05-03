@@ -1,0 +1,23 @@
+@inject Phycock.Service.UserManagementService UserManagementService
+@{
+    var users = await UserManagementService.GetMemberListAsync();
+    var selectedUserId = await UserManagementService.GetSelectedMemberUserIdAsync();
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+@if (User.IsInRole("Admin") && users.Any())
+{
+    <li class="nav-item me-lg-2 my-2 my-lg-0">
+        <form asp-controller="TargetUser" asp-action="Select" method="post" class="d-flex align-items-center gap-2">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <label for="globalTargetUserId" class="text-white small mb-0">対象利用者</label>
+            <select id="globalTargetUserId" name="targetUserId" class="form-select form-select-sm" onchange="this.form.submit()">
+                @foreach (var user in users)
+                {
+                    <option value="@user.Value" selected="@(user.Value == selectedUserId)">@user.Text</option>
+                }
+            </select>
+        </form>
+    </li>
+}

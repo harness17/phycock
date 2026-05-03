@@ -1,0 +1,16 @@
+@model Phycock.Models.HealthRecordJsonDto
+
+<dl class="row mb-0">
+    <dt class="col-4">記録日</dt>
+    <dd class="col-8">@Model.RecordDate</dd>
+    <dt class="col-4">タイミング</dt>
+    <dd class="col-8">@Model.RecordTiming</dd>
+    <dt class="col-4">体調</dt>
+    <dd class="col-8">@Model.Condition</dd>
+    <dt class="col-4">気分</dt>
+    <dd class="col-8">@Model.Feeling</dd>
+    <dt class="col-4">症状</dt>
+    <dd class="col-8">@string.Join("、", Model.Symptoms)</dd>
+    <dt class="col-4">メモ</dt>
+    <dd class="col-8">@Model.Memo</dd>
+</dl>

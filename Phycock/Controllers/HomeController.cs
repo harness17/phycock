@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Phycock.Models;
+using Phycock.Service;
 using System.Diagnostics;
+using System.Security.Claims;
 
 namespace Phycock.Controllers
 {
@@ -11,10 +13,25 @@ namespace Phycock.Controllers
     [Authorize]
     public class HomeController : Controller
     {
-        /// <summary>トップ画面。</summary>
-        public IActionResult Index()
+        private readonly DashboardService _dashboardService;
+        private readonly UserManagementService _userManagementService;
+
+        public HomeController(DashboardService dashboardService, UserManagementService userManagementService)
         {
-            return View();
+            _dashboardService = dashboardService;
+            _userManagementService = userManagementService;
+        }
+
+        /// <summary>トップ画面。</summary>
+        public async Task<IActionResult> Index()
+        {
+            var userId = User.IsInRole("Admin")
+                ? await _userManagementService.GetSelectedMemberUserIdAsync()
+                : GetCurrentUserId();
+            var vm = string.IsNullOrWhiteSpace(userId)
+                ? new DashboardViewModel()
+                : _dashboardService.GetDashboardAsync(userId, User.IsInRole("Admin"));
+            return View(vm);
         }
 
         /// <summary>プライバシーポリシー画面。未ログインでも閲覧可能。</summary>
@@ -35,5 +52,8 @@ namespace Phycock.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+        private string GetCurrentUserId()
+            => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
     }
 }

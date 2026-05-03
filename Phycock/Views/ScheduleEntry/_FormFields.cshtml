@@ -1,0 +1,55 @@
+@model Phycock.Models.ScheduleEntryFormViewModel
+
+<input asp-for="Id" type="hidden" />
+<input asp-for="UserId" type="hidden" />
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="Date" class="form-label"></label>
+        <input asp-for="Date" type="date" class="form-control" />
+        <span asp-validation-for="Date" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Session" class="form-label"></label>
+        <select asp-for="Session" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.ScheduleSession>()" class="form-select"></select>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.ScheduleStatus>()" class="form-select"></select>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="ActivityType" class="form-label"></label>
+        <select asp-for="ActivityType" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.ActivityType>()" class="form-select"></select>
+    </div>
+    <div class="col-md-6" data-program-type-field>
+        <label asp-for="ProgramType" class="form-label"></label>
+        <select asp-for="ProgramType" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.ProgramType>()" class="form-select">
+            <option value="">選択なし</option>
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="StartTime" class="form-label"></label>
+        <input asp-for="StartTime" type="time" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="EndTime" class="form-label"></label>
+        <input asp-for="EndTime" type="time" class="form-control" />
+        <span asp-validation-for="EndTime" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input asp-for="IsAtHome" class="form-check-input" />
+            <label asp-for="IsAtHome" class="form-check-label"></label>
+        </div>
+    </div>
+    <div class="col-12">
+        <label asp-for="ActivityNote" class="form-label"></label>
+        <input asp-for="ActivityNote" class="form-control" />
+        <span asp-validation-for="ActivityNote" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label"></label>
+        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Notes" class="text-danger"></span>
+    </div>
+</div>

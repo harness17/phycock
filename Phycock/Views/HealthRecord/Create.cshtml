@@ -1,0 +1,11 @@
+@model Phycock.Models.HealthRecordFormViewModel
+@{
+    ViewData["Title"] = "体調記録追加";
+}
+
+<h1 class="h3 mb-3">体調記録追加</h1>
+@await Html.PartialAsync("_Form", Model)
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

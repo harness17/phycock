@@ -1,12 +1,12 @@
 @model UserManagementEditViewModel
 @{
-    ViewData["Title"] = "ユーザー削除";
+    ViewData["Title"] = "ユーザー無効化";
 }
 
 <h2>@ViewData["Title"]</h2>
 
 <div class="alert alert-warning">
-    <i class="fas fa-exclamation-triangle me-2"></i>以下のユーザーを削除します。この操作は取り消せません。
+    <i class="fas fa-exclamation-triangle me-2"></i>以下のユーザーを無効化します。ユーザー情報と関連データは保持され、ログインできなくなります。
 </div>
 
 <div class="card mb-3" style="max-width: 500px;">
@@ -38,7 +38,7 @@
     @Html.AntiForgeryToken()
     <input type="hidden" name="id" value="@Model.Id" />
     <button type="submit" class="btn btn-danger">
-        <i class="fas fa-trash me-1"></i>削除する
+        <i class="fas fa-ban me-1"></i>無効化する
     </button>
     <a asp-action="Index" asp-route-returnList="true" class="btn btn-secondary ms-2">キャンセル</a>
 </form>

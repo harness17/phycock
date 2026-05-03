@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "通所スケジュール";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h3 mb-0">通所スケジュール</h1>
+    <button type="button" id="createButton" class="btn btn-primary"><i class="fas fa-plus me-1"></i>追加</button>
+</div>
+
+<div id="calendar"></div>
+
+<div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="entryModalContent"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script>
+        let calendar;
+        const modalElement = document.getElementById('entryModal');
+        const entryModal = new bootstrap.Modal(modalElement);
+
+        function loadForm(url) {
+            $('#entryModalContent').load(url, function () {
+                updateProgramTypeVisibility($('#entryModalContent').find('.schedule-entry-form'));
+                entryModal.show();
+            });
+        }
+
+        function applyScheduleSessionPreset($form) {
+            const session = $form.find('[name="Session"]').val();
+            const presets = {
+                '0': { start: '09:00', end: '12:00' },
+                '1': { start: '13:00', end: '15:00' },
+                '2': { start: '10:00', end: '15:00' }
+            };
+            const preset = presets[session];
+            if (!preset) return;
+
+            $form.find('[name="StartTime"]').val(preset.start);
+            $form.find('[name="EndTime"]').val(preset.end);
+        }
+
+        function updateProgramTypeVisibility($form) {
+            const isProgram = $form.find('[name="ActivityType"]').val() === '0';
+            const $programTypeField = $form.find('[data-program-type-field]');
+            $programTypeField.toggle(isProgram);
+            if (!isProgram) {
+                $form.find('[name="ProgramType"]').val('');
+            }
+        }
+
+        function submitEntryForm($form) {
+            $.ajax({
+                type: 'POST',
+                url: $form.attr('action'),
+                data: $form.serialize(),
+                success: function (response) {
+                    if (response && response.success) {
+                        entryModal.hide();
+                        calendar.refetchEvents();
+                        return;
+                    }
+                    $('#entryModalContent').html(response);
+                    updateProgramTypeVisibility($('#entryModalContent').find('.schedule-entry-form'));
+                }
+            });
+        }
+
+        function deleteScheduleEntry(button) {
+            const token = $(button).closest('form').find('input[name="__RequestVerificationToken"]').val();
+            $.post('/ScheduleEntry/Delete', {
+                id: $(button).data('id'),
+                __RequestVerificationToken: token
+            }, function (response) {
+                if (response && response.success) {
+                    entryModal.hide();
+                    calendar.refetchEvents();
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                initialView: 'dayGridMonth',
+                locale: 'ja',
+                height: 'auto',
+                selectable: true,
+                events: '/ScheduleEntry/GetEvents',
+                dateClick: function (info) {
+                    loadForm('/ScheduleEntry/CreatePartial?date=' + info.dateStr);
+                },
+                eventClick: function (info) {
+                    loadForm('/ScheduleEntry/EditPartial/' + info.event.id);
+                }
+            });
+            calendar.render();
+        });
+
+        $('#createButton').on('click', function () {
+            loadForm('/ScheduleEntry/CreatePartial');
+        });
+
+        $(document).on('submit', '.schedule-entry-form', function (e) {
+            e.preventDefault();
+            submitEntryForm($(this));
+        });
+
+        $(document).on('change', '.schedule-entry-form [name="Session"]', function () {
+            applyScheduleSessionPreset($(this).closest('form'));
+        });
+
+        $(document).on('change', '.schedule-entry-form [name="ActivityType"]', function () {
+            updateProgramTypeVisibility($(this).closest('form'));
+        });
+    </script>
+}

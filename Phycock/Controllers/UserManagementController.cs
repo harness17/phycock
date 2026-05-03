@@ -123,7 +123,7 @@ namespace Phycock.Controllers
             // ポイント: 初期 Admin ユーザーへの削除操作をここで遮断する
             if (id == Const.SystemAdminUserId)
             {
-                TempData[SessionKey.Message] = LocalUtil.GetErrorAlertMessage("初期管理者ユーザーは削除できません");
+                TempData[SessionKey.Message] = LocalUtil.GetErrorAlertMessage("初期管理者ユーザーは無効化できません");
                 return RedirectToAction("Index", new { returnList = true });
             }
 
@@ -136,13 +136,15 @@ namespace Phycock.Controllers
             return View(model);
         }
 
-        /// <summary>ユーザー削除処理（POST）。</summary>
+        /// <summary>ユーザー無効化処理（POST）。</summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string id)
         {
-            await _workerService.DeleteUserAsync(id);
-            TempData[SessionKey.Message] = LocalUtil.GetDeleteAlertMessage("ユーザー");
+            var result = await _workerService.DisableUserAsync(id);
+            TempData[SessionKey.Message] = result.Succeeded
+                ? LocalUtil.GetAlertMessage("{1}を無効化しました。", "ユーザー")
+                : LocalUtil.GetErrorAlertMessage(result.Errors.FirstOrDefault()?.Description ?? "ユーザーを無効化できませんでした");
             return RedirectToAction("Index", new { returnList = true });
         }
 

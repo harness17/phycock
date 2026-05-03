@@ -43,10 +43,16 @@ namespace Phycock.Controllers
             ViewBag.ReturnUrl = returnUrl;
             if (!ModelState.IsValid) return View(model);
 
-            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            var result = user == null
+                ? Microsoft.AspNetCore.Identity.SignInResult.Failed
+                : await _signInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: true);
 
             if (result.Succeeded)
+            {
+                await _signInManager.SignInAsync(user!, model.RememberMe);
                 return RedirectToLocal(returnUrl);
+            }
 
             if (result.IsLockedOut)
             {
@@ -60,27 +66,31 @@ namespace Phycock.Controllers
         }
 
         /// <summary>新規登録画面表示。</summary>
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public IActionResult Register()
         {
             return View();
         }
 
-        /// <summary>新規登録処理。登録成功時は Member ロールを付与してサインインする。</summary>
+        /// <summary>新規登録処理。登録成功時は Member ロールを付与してユーザー管理へ戻る。</summary>
         [HttpPost]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var user = new ApplicationUser
+                {
+                    UserName = model.UserName,
+                    Email = model.Email,
+                    ApplicationRoleName = ApplicationRoleType.Member.ToString(),
+                };
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, ApplicationRoleType.Member.ToString());
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Index", "UserManagement");
                 }
                 AddErrors(result);
             }
