@@ -36,7 +36,7 @@ namespace Dev.CommonLibrary.Extensions.Helper
             if (value == null) return HtmlString.Empty;
 
             var text = value.GetType().IsEnum
-                ? EnumUtility.GetDescription(value.GetType(), value.ToString()!)
+                ? EnumUtility.GetEnumDisplay(value.GetType(), value.ToString()!)
                 : value.ToString() ?? "";
 
             var label = new TagBuilder("label");
@@ -52,7 +52,7 @@ namespace Dev.CommonLibrary.Extensions.Helper
             Expression<Func<TModel, TProperty>> expression,
             string partialViewName)
         {
-            var prefix = GetExpressionText(expression);
+            var prefix = ExpressionHelper.GetExpressionText(expression);
             var model = expression.Compile().Invoke(htmlHelper.ViewData.Model);
             return PartialFor(htmlHelper, prefix, partialViewName, model);
         }
@@ -79,21 +79,11 @@ namespace Dev.CommonLibrary.Extensions.Helper
                 ? prefix
                 : $"{htmlHelper.ViewData.TemplateInfo.HtmlFieldPrefix}.{prefix}";
 
+            // ASP.NET Core はデフォルトで SynchronizationContext を持たないため
+            // .GetAwaiter().GetResult() によるデッドロックは発生しない。
+            // IHtmlContent 戻り値の制約上 async 化不可。
             return htmlHelper.PartialAsync(partialViewName, model, viewData).GetAwaiter().GetResult();
         }
 
-        private static string GetExpressionText(LambdaExpression expression)
-        {
-            var body = expression.Body is UnaryExpression unary ? unary.Operand : expression.Body;
-            var names = new Stack<string>();
-
-            while (body is MemberExpression member)
-            {
-                names.Push(member.Member.Name);
-                body = member.Expression!;
-            }
-
-            return string.Join(".", names);
-        }
     }
 }

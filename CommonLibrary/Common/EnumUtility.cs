@@ -77,5 +77,17 @@ namespace Dev.CommonLibrary.Common
             var description = attributes.Select(n => n.Description).FirstOrDefault();
             return string.IsNullOrEmpty(description) ? name : description!;
         }
+
+        /// <summary>指定した Type・フィールド名の DisplayAttribute.Name を返す。属性がない場合は name を返す。</summary>
+        public static string GetEnumDisplay(Type type, string name)
+        {
+            var fieldInfo = type.GetField(name);
+            if (fieldInfo == null) return name;
+            var attrs = (DisplayAttribute[])fieldInfo.GetCustomAttributes(typeof(DisplayAttribute), false);
+            if (attrs.Length == 0) return name;
+            var attr = attrs[0];
+            if (attr.ResourceType != null) return attr.GetName() ?? name;
+            return attr.Name ?? name;
+        }
     }
 }

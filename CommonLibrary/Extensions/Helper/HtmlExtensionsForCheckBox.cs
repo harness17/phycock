@@ -21,7 +21,7 @@ namespace Dev.CommonLibrary.Extensions.Helper
             object? htmlAttributes = null)
             where TProperty : List<string>
         {
-            var expressionText = GetExpressionText(expression);
+            var expressionText = ExpressionHelper.GetExpressionText(expression);
             var fullName = htmlHelper.ViewContext.ViewData.TemplateInfo.GetFullHtmlFieldName(expressionText);
             var selectedValues = expression.Compile().Invoke(htmlHelper.ViewData.Model) ?? new List<string>();
             var builder = new HtmlContentBuilder();
@@ -46,7 +46,7 @@ namespace Dev.CommonLibrary.Extensions.Helper
             object? htmlAttributes = null)
             where TProperty : List<string>
         {
-            var expressionText = GetExpressionText(expression);
+            var expressionText = ExpressionHelper.GetExpressionText(expression);
             var fullName = htmlHelper.ViewContext.ViewData.TemplateInfo.GetFullHtmlFieldName(expressionText);
             var selectedValues = expression.Compile().Invoke(htmlHelper.ViewData.Model) ?? new List<string>();
             return CheckBoxForValue(fullName, selectedValues, item, index, htmlAttributes);
@@ -101,18 +101,5 @@ namespace Dev.CommonLibrary.Extensions.Helper
             }
         }
 
-        private static string GetExpressionText(LambdaExpression expression)
-        {
-            var body = expression.Body is UnaryExpression unary ? unary.Operand : expression.Body;
-            var names = new Stack<string>();
-
-            while (body is MemberExpression member)
-            {
-                names.Push(member.Member.Name);
-                body = member.Expression!;
-            }
-
-            return string.Join(".", names);
-        }
     }
 }

@@ -27,7 +27,7 @@ namespace Dev.CommonLibrary.Extensions.Helper
             var items = names.Select(name => new SelectListItem
             {
                 Value = name,
-                Text = EnumUtility.GetDescription(typeof(TProperty), name),
+                Text = EnumUtility.GetEnumDisplay(typeof(TProperty), name),
             });
 
             return htmlHelper.RadioButtonForSelectList(expression, items, prefix, clickevent);
@@ -43,7 +43,7 @@ namespace Dev.CommonLibrary.Extensions.Helper
             string prefix = "",
             string clickevent = "")
         {
-            var expressionText = GetExpressionText(expression);
+            var expressionText = ExpressionHelper.GetExpressionText(expression);
             var fullName = htmlHelper.ViewContext.ViewData.TemplateInfo.GetFullHtmlFieldName(expressionText);
             var currentValue = expression.Compile().Invoke(htmlHelper.ViewData.Model)?.ToString();
             var builder = new HtmlContentBuilder();
@@ -75,18 +75,5 @@ namespace Dev.CommonLibrary.Extensions.Helper
             return builder;
         }
 
-        private static string GetExpressionText(LambdaExpression expression)
-        {
-            var body = expression.Body is UnaryExpression unary ? unary.Operand : expression.Body;
-            var names = new Stack<string>();
-
-            while (body is MemberExpression member)
-            {
-                names.Push(member.Member.Name);
-                body = member.Expression!;
-            }
-
-            return string.Join(".", names);
-        }
     }
 }
