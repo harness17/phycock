@@ -23,7 +23,7 @@ namespace Phycock.Service
         }
 
         /// <summary>週次体調統計を取得する。</summary>
-        public ChartSeriesDto GetWeeklyHealthStatsAsync(string userId, DateTime weekStart)
+        public ChartSeriesDto GetWeeklyHealthStats(string userId, DateTime weekStart)
         {
             var start = weekStart.Date;
             var end = start.AddDays(6);
@@ -42,7 +42,7 @@ namespace Phycock.Service
         }
 
         /// <summary>月次体調統計を取得する。</summary>
-        public ChartSeriesDto GetMonthlyHealthStatsAsync(string userId, int year, int month)
+        public ChartSeriesDto GetMonthlyHealthStats(string userId, int year, int month)
         {
             var start = new DateTime(year, month, 1);
             var end = start.AddMonths(1).AddDays(-1);
@@ -61,7 +61,7 @@ namespace Phycock.Service
         }
 
         /// <summary>週次睡眠統計を取得する。</summary>
-        public ChartSeriesDto GetWeeklySleepStatsAsync(string userId, DateTime weekStart)
+        public ChartSeriesDto GetWeeklySleepStats(string userId, DateTime weekStart)
         {
             var start = weekStart.Date;
             var end = start.AddDays(6);

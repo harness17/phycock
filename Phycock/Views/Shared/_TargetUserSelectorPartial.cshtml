@@ -15,7 +15,7 @@
             <select id="globalTargetUserId" name="targetUserId" class="form-select form-select-sm" onchange="this.form.submit()">
                 @foreach (var user in users)
                 {
-                    <option value="@user.Value" selected="@(user.Value == selectedUserId)">@user.Text</option>
+                    <option value="@user.Value" @(user.Value == selectedUserId ? "selected" : "")>@user.Text</option>
                 }
             </select>
         </form>

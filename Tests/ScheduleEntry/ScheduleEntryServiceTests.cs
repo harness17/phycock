@@ -11,7 +11,7 @@ namespace Tests.ScheduleEntry
     public class ScheduleEntryServiceTests
     {
         [Fact]
-        public void CreateAsync_AsMember_IgnoresPostedUserId()
+        public void Create_AsMember_IgnoresPostedUserId()
         {
             var repository = new Mock<ScheduleEntryRepository>(null!);
             ScheduleEntryEntity? inserted = null;
@@ -19,7 +19,7 @@ namespace Tests.ScheduleEntry
                 .Callback<ScheduleEntryEntity>(entity => inserted = entity);
             var service = new ScheduleEntryService(repository.Object);
 
-            service.CreateAsync(new ScheduleEntryFormViewModel
+            service.Create(new ScheduleEntryFormViewModel
             {
                 UserId = "posted-user",
                 Date = new DateOnly(2026, 5, 3),

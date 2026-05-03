@@ -22,7 +22,7 @@ namespace Phycock.Service
         }
 
         /// <summary>指定日の体調記録一覧を取得する。</summary>
-        public List<HealthRecordListViewModel> GetListAsync(string userId, DateTime? filterDate)
+        public List<HealthRecordListViewModel> GetList(string userId, DateTime? filterDate)
         {
             var date = filterDate ?? DateTime.Today;
             return _repository.GetByUserAndDate(userId, date)
@@ -31,7 +31,7 @@ namespace Phycock.Service
         }
 
         /// <summary>Admin 用に指定期間の全ユーザー体調記録一覧を取得する。</summary>
-        public List<HealthRecordListViewModel> GetAllListAsync(DateTime startDate, DateTime endDate)
+        public List<HealthRecordListViewModel> GetAllList(DateTime startDate, DateTime endDate)
         {
             return _repository.GetAllByRange(startDate, endDate)
                 .Select(ToListViewModel)
@@ -39,7 +39,7 @@ namespace Phycock.Service
         }
 
         /// <summary>編集対象の体調記録を取得する。所有者でも Admin でもない場合は null。</summary>
-        public HealthRecordFormViewModel? GetForEditAsync(long id, string currentUserId, bool isAdmin)
+        public HealthRecordFormViewModel? GetForEdit(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return null;
@@ -48,7 +48,7 @@ namespace Phycock.Service
         }
 
         /// <summary>JSON 詳細 DTO を取得する。閲覧権限がない場合は null。</summary>
-        public HealthRecordJsonDto? GetDetailAsync(long id, string currentUserId, bool isAdmin)
+        public HealthRecordJsonDto? GetDetail(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return null;
@@ -76,7 +76,7 @@ namespace Phycock.Service
         }
 
         /// <summary>体調記録を新規登録する。</summary>
-        public void CreateAsync(HealthRecordFormViewModel model, string currentUserId, bool isAdmin = false)
+        public void Create(HealthRecordFormViewModel model, string currentUserId, bool isAdmin = false)
         {
             var entity = new HealthRecordEntity
             {
@@ -93,7 +93,7 @@ namespace Phycock.Service
         }
 
         /// <summary>体調記録を更新する。所有者でも Admin でもない場合は false。</summary>
-        public bool UpdateAsync(HealthRecordFormViewModel model, string currentUserId, bool isAdmin)
+        public bool Update(HealthRecordFormViewModel model, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(model.Id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
@@ -110,7 +110,7 @@ namespace Phycock.Service
         }
 
         /// <summary>体調記録を論理削除する。所有者でも Admin でもない場合は false。</summary>
-        public bool DeleteAsync(long id, string currentUserId, bool isAdmin)
+        public bool Delete(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
@@ -120,7 +120,7 @@ namespace Phycock.Service
         }
 
         /// <summary>今日の体調サマリーを取得する。</summary>
-        public List<HealthRecordListViewModel> GetTodaySummaryAsync(string userId)
+        public List<HealthRecordListViewModel> GetTodaySummary(string userId)
         {
             return _repository.GetByUserAndDate(userId, DateTime.Today)
                 .Select(ToListViewModel)
@@ -128,7 +128,7 @@ namespace Phycock.Service
         }
 
         /// <summary>直近7日分の体調平均を取得する。</summary>
-        public WeeklySummaryDto GetWeeklySummaryAsync(string userId, DateTime? endDate = null)
+        public WeeklySummaryDto GetWeeklySummary(string userId, DateTime? endDate = null)
         {
             var end = (endDate ?? DateTime.Today).Date;
             var start = end.AddDays(-6);

@@ -57,7 +57,7 @@ namespace Phycock.Controllers
         {
             try
             {
-                var detail = _service.GetDetailAsync(id, GetCurrentUserId(), User.IsInRole("Admin"));
+                var detail = _service.GetDetail(id, GetCurrentUserId(), User.IsInRole("Admin"));
                 if (detail == null) return StatusCode(StatusCodes.Status403Forbidden);
                 return Json(detail);
             }
@@ -92,7 +92,7 @@ namespace Phycock.Controllers
                     if (string.IsNullOrWhiteSpace(model.UserId)) return StatusCode(StatusCodes.Status403Forbidden);
                 }
 
-                _service.CreateAsync(model, GetCurrentUserId(), User.IsInRole("Admin"));
+                _service.Create(model, GetCurrentUserId(), User.IsInRole("Admin"));
                 return Json(new { success = true });
             }
             catch (Exception ex)
@@ -105,7 +105,7 @@ namespace Phycock.Controllers
         [HttpGet]
         public IActionResult EditPartial(long id)
         {
-            var model = _service.GetForEditAsync(id, GetCurrentUserId(), User.IsInRole("Admin"));
+            var model = _service.GetForEdit(id, GetCurrentUserId(), User.IsInRole("Admin"));
             if (model == null) return StatusCode(StatusCodes.Status403Forbidden);
             return PartialView("_EditPartial", model);
         }
@@ -119,7 +119,7 @@ namespace Phycock.Controllers
 
             try
             {
-                var updated = _service.UpdateAsync(model, GetCurrentUserId(), User.IsInRole("Admin"));
+                var updated = _service.Update(model, GetCurrentUserId(), User.IsInRole("Admin"));
                 if (!updated) return StatusCode(StatusCodes.Status403Forbidden);
                 return Json(new { success = true });
             }
@@ -136,7 +136,7 @@ namespace Phycock.Controllers
         {
             try
             {
-                var deleted = _service.DeleteAsync(id, GetCurrentUserId(), User.IsInRole("Admin"));
+                var deleted = _service.Delete(id, GetCurrentUserId(), User.IsInRole("Admin"));
                 if (!deleted) return StatusCode(StatusCodes.Status403Forbidden);
                 return Json(new { success = true });
             }

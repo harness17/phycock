@@ -35,7 +35,7 @@ namespace Phycock.Controllers
         {
             try
             {
-                return Json(_service.GetWeeklyHealthStatsAsync(GetCurrentUserId(), weekStart));
+                return Json(_service.GetWeeklyHealthStats(GetCurrentUserId(), weekStart));
             }
             catch (Exception ex)
             {
@@ -49,7 +49,7 @@ namespace Phycock.Controllers
         {
             try
             {
-                return Json(_service.GetMonthlyHealthStatsAsync(GetCurrentUserId(), year, month));
+                return Json(_service.GetMonthlyHealthStats(GetCurrentUserId(), year, month));
             }
             catch (Exception ex)
             {
@@ -63,7 +63,7 @@ namespace Phycock.Controllers
         {
             try
             {
-                return Json(_service.GetWeeklySleepStatsAsync(GetCurrentUserId(), weekStart));
+                return Json(_service.GetWeeklySleepStats(GetCurrentUserId(), weekStart));
             }
             catch (Exception ex)
             {

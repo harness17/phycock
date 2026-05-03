@@ -50,20 +50,20 @@ namespace Tests.SleepRecord
         }
 
         [Fact]
-        public void GetForEditAsync_ReturnsNull_WhenNotOwner()
+        public void GetForEdit_ReturnsNull_WhenNotOwner()
         {
             var repository = new Mock<SleepRecordRepository>(null!);
             repository.Setup(x => x.SelectById(10))
                 .Returns(new SleepRecordEntity { Id = 10, UserId = "owner-user" });
             var service = new SleepRecordService(repository.Object);
 
-            var result = service.GetForEditAsync(10, "other-user", isAdmin: false);
+            var result = service.GetForEdit(10, "other-user", isAdmin: false);
 
             Assert.Null(result);
         }
 
         [Fact]
-        public void CreateAsync_AsMember_IgnoresPostedUserId()
+        public void Create_AsMember_IgnoresPostedUserId()
         {
             var repository = new Mock<SleepRecordRepository>(null!);
             SleepRecordEntity? inserted = null;
@@ -71,7 +71,7 @@ namespace Tests.SleepRecord
                 .Callback<SleepRecordEntity>(entity => inserted = entity);
             var service = new SleepRecordService(repository.Object);
 
-            service.CreateAsync(new SleepRecordFormViewModel
+            service.Create(new SleepRecordFormViewModel
             {
                 UserId = "posted-user",
                 RecordDate = new DateTime(2026, 5, 3),
@@ -84,7 +84,7 @@ namespace Tests.SleepRecord
         }
 
         [Fact]
-        public void CreateAsync_CombinesRecordDateAndTimes_WithOvernightEnd()
+        public void Create_CombinesRecordDateAndTimes_WithOvernightEnd()
         {
             var repository = new Mock<SleepRecordRepository>(null!);
             SleepRecordEntity? inserted = null;
@@ -92,7 +92,7 @@ namespace Tests.SleepRecord
                 .Callback<SleepRecordEntity>(entity => inserted = entity);
             var service = new SleepRecordService(repository.Object);
 
-            service.CreateAsync(new SleepRecordFormViewModel
+            service.Create(new SleepRecordFormViewModel
             {
                 UserId = "current-user",
                 RecordDate = new DateTime(2026, 5, 3),

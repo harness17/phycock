@@ -27,7 +27,7 @@ namespace Tests.Statistics
                 });
             var service = new StatisticsService(healthRepository.Object, sleepRepository.Object);
 
-            var result = service.GetWeeklyHealthStatsAsync("user-1", new DateTime(2026, 5, 1));
+            var result = service.GetWeeklyHealthStats("user-1", new DateTime(2026, 5, 1));
 
             Assert.Equal(7, result.Labels.Count);
             Assert.Equal(7, result.ConditionData.Count);
@@ -43,7 +43,7 @@ namespace Tests.Statistics
                 .Returns(new List<HealthRecordEntity>());
             var service = new StatisticsService(healthRepository.Object, sleepRepository.Object);
 
-            var result = service.GetWeeklyHealthStatsAsync("user-1", new DateTime(2026, 5, 1));
+            var result = service.GetWeeklyHealthStats("user-1", new DateTime(2026, 5, 1));
 
             Assert.All(result.ConditionData, Assert.Null);
             healthRepository.Verify(x => x.GetByUserAndRange("user-1", It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);

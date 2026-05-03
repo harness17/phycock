@@ -30,7 +30,7 @@ namespace Phycock.Service
         }
 
         /// <summary>編集対象の通所予定を取得する。所有者でも Admin でもない場合は null。</summary>
-        public ScheduleEntryFormViewModel? GetForEditAsync(long id, string currentUserId, bool isAdmin)
+        public ScheduleEntryFormViewModel? GetForEdit(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return null;
@@ -39,7 +39,7 @@ namespace Phycock.Service
         }
 
         /// <summary>通所予定詳細を取得する。閲覧権限がない場合は null。</summary>
-        public ScheduleEntryDetailDto? GetDetailAsync(long id, string currentUserId, bool isAdmin)
+        public ScheduleEntryDetailDto? GetDetail(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return null;
@@ -61,7 +61,7 @@ namespace Phycock.Service
         }
 
         /// <summary>通所予定を新規登録する。</summary>
-        public void CreateAsync(ScheduleEntryFormViewModel model, string currentUserId, bool isAdmin = false)
+        public void Create(ScheduleEntryFormViewModel model, string currentUserId, bool isAdmin = false)
         {
             var entity = ToEntity(model);
             entity.UserId = isAdmin && !string.IsNullOrWhiteSpace(model.UserId) ? model.UserId : currentUserId;
@@ -69,7 +69,7 @@ namespace Phycock.Service
         }
 
         /// <summary>通所予定を更新する。所有者でも Admin でもない場合は false。</summary>
-        public bool UpdateAsync(ScheduleEntryFormViewModel model, string currentUserId, bool isAdmin)
+        public bool Update(ScheduleEntryFormViewModel model, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(model.Id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
@@ -90,7 +90,7 @@ namespace Phycock.Service
         }
 
         /// <summary>通所予定を論理削除する。所有者でも Admin でもない場合は false。</summary>
-        public bool DeleteAsync(long id, string currentUserId, bool isAdmin)
+        public bool Delete(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
@@ -100,7 +100,7 @@ namespace Phycock.Service
         }
 
         /// <summary>今日の通所予定を取得する。</summary>
-        public List<ScheduleEntryDetailDto> GetTodayEntriesAsync(string userId)
+        public List<ScheduleEntryDetailDto> GetTodayEntries(string userId)
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
             return _repository.GetByUserAndDate(userId, today)

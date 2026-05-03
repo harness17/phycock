@@ -25,9 +25,9 @@ namespace Phycock.Service
         }
 
         /// <summary>ダッシュボード表示データを取得する。</summary>
-        public DashboardViewModel GetDashboardAsync(string userId, bool isAdmin)
+        public DashboardViewModel GetDashboard(string userId, bool isAdmin)
         {
-            var weeklySummary = _healthRecordService.GetWeeklySummaryAsync(userId);
+            var weeklySummary = _healthRecordService.GetWeeklySummary(userId);
             weeklySummary.TotalSleepDuration = _sleepRecordService.GetSleepDuration(
                 userId,
                 weeklySummary.StartDate,
@@ -35,8 +35,8 @@ namespace Phycock.Service
 
             return new DashboardViewModel
             {
-                TodayScheduleEntries = _scheduleEntryService.GetTodayEntriesAsync(userId),
-                TodayHealthRecords = _healthRecordService.GetTodaySummaryAsync(userId),
+                TodayScheduleEntries = _scheduleEntryService.GetTodayEntries(userId),
+                TodayHealthRecords = _healthRecordService.GetTodaySummary(userId),
                 WeeklySummary = weeklySummary,
             };
         }

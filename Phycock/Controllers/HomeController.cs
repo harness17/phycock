@@ -30,7 +30,7 @@ namespace Phycock.Controllers
                 : GetCurrentUserId();
             var vm = string.IsNullOrWhiteSpace(userId)
                 ? new DashboardViewModel()
-                : _dashboardService.GetDashboardAsync(userId, User.IsInRole("Admin"));
+                : _dashboardService.GetDashboard(userId, User.IsInRole("Admin"));
             return View(vm);
         }
 

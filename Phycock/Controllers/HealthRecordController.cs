@@ -32,15 +32,15 @@ namespace Phycock.Controllers
             ViewBag.IsAdmin = isAdmin;
 
             var records = isAdmin
-                ? _service.GetListAsync(await _userManagementService.GetSelectedMemberUserIdAsync(), date)
-                : _service.GetListAsync(GetCurrentUserId(), date);
+                ? _service.GetList(await _userManagementService.GetSelectedMemberUserIdAsync(), date)
+                : _service.GetList(GetCurrentUserId(), date);
             return View(records);
         }
 
         [HttpGet]
         public IActionResult Detail(long id)
         {
-            var detail = _service.GetDetailAsync(id, GetCurrentUserId(), User.IsInRole("Admin"));
+            var detail = _service.GetDetail(id, GetCurrentUserId(), User.IsInRole("Admin"));
             if (detail == null) return StatusCode(StatusCodes.Status403Forbidden);
             return Json(detail);
         }
@@ -71,14 +71,14 @@ namespace Phycock.Controllers
                 if (string.IsNullOrWhiteSpace(model.UserId)) return StatusCode(StatusCodes.Status403Forbidden);
             }
 
-            _service.CreateAsync(model, GetCurrentUserId(), User.IsInRole("Admin"));
+            _service.Create(model, GetCurrentUserId(), User.IsInRole("Admin"));
             return RedirectToAction(nameof(Index), new { filterDate = model.RecordDate.ToString("yyyy-MM-dd") });
         }
 
         [HttpGet]
         public IActionResult Edit(long id)
         {
-            var model = _service.GetForEditAsync(id, GetCurrentUserId(), User.IsInRole("Admin"));
+            var model = _service.GetForEdit(id, GetCurrentUserId(), User.IsInRole("Admin"));
             if (model == null) return StatusCode(StatusCodes.Status403Forbidden);
             return View(model);
         }
@@ -93,7 +93,7 @@ namespace Phycock.Controllers
                 return View(model);
             }
 
-            var updated = _service.UpdateAsync(model, GetCurrentUserId(), User.IsInRole("Admin"));
+            var updated = _service.Update(model, GetCurrentUserId(), User.IsInRole("Admin"));
             if (!updated) return StatusCode(StatusCodes.Status403Forbidden);
             return RedirectToAction(nameof(Index), new { filterDate = model.RecordDate.ToString("yyyy-MM-dd") });
         }
@@ -102,7 +102,7 @@ namespace Phycock.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Delete(long id)
         {
-            var deleted = _service.DeleteAsync(id, GetCurrentUserId(), User.IsInRole("Admin"));
+            var deleted = _service.Delete(id, GetCurrentUserId(), User.IsInRole("Admin"));
             if (!deleted) return StatusCode(StatusCodes.Status403Forbidden);
             return RedirectToAction(nameof(Index));
         }

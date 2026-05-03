@@ -11,7 +11,7 @@ namespace Tests.HealthRecord
     public class HealthRecordServiceTests
     {
         [Fact]
-        public void CreateAsync_SetsUserId_Correctly()
+        public void Create_SetsUserId_Correctly()
         {
             var repository = new Mock<HealthRecordRepository>(null!);
             HealthRecordEntity? inserted = null;
@@ -19,7 +19,7 @@ namespace Tests.HealthRecord
                 .Callback<HealthRecordEntity>(entity => inserted = entity);
             var service = new HealthRecordService(repository.Object);
 
-            service.CreateAsync(new HealthRecordFormViewModel
+            service.Create(new HealthRecordFormViewModel
             {
                 UserId = "posted-user",
                 RecordDate = new DateTime(2026, 5, 3),
@@ -35,7 +35,7 @@ namespace Tests.HealthRecord
         }
 
         [Fact]
-        public void CreateAsync_AsMember_IgnoresPostedUserId()
+        public void Create_AsMember_IgnoresPostedUserId()
         {
             var repository = new Mock<HealthRecordRepository>(null!);
             HealthRecordEntity? inserted = null;
@@ -43,7 +43,7 @@ namespace Tests.HealthRecord
                 .Callback<HealthRecordEntity>(entity => inserted = entity);
             var service = new HealthRecordService(repository.Object);
 
-            service.CreateAsync(new HealthRecordFormViewModel
+            service.Create(new HealthRecordFormViewModel
             {
                 UserId = "posted-user",
                 RecordDate = new DateTime(2026, 5, 3),
@@ -67,20 +67,20 @@ namespace Tests.HealthRecord
         }
 
         [Fact]
-        public void GetForEditAsync_ReturnsNull_WhenNotOwner()
+        public void GetForEdit_ReturnsNull_WhenNotOwner()
         {
             var repository = new Mock<HealthRecordRepository>(null!);
             repository.Setup(x => x.SelectById(10))
                 .Returns(new HealthRecordEntity { Id = 10, UserId = "owner-user" });
             var service = new HealthRecordService(repository.Object);
 
-            var result = service.GetForEditAsync(10, "other-user", isAdmin: false);
+            var result = service.GetForEdit(10, "other-user", isAdmin: false);
 
             Assert.Null(result);
         }
 
         [Fact]
-        public void GetForEditAsync_ReturnsEntity_WhenAdmin()
+        public void GetForEdit_ReturnsEntity_WhenAdmin()
         {
             var repository = new Mock<HealthRecordRepository>(null!);
             repository.Setup(x => x.SelectById(10))
@@ -94,21 +94,21 @@ namespace Tests.HealthRecord
                 });
             var service = new HealthRecordService(repository.Object);
 
-            var result = service.GetForEditAsync(10, "admin-user", isAdmin: true);
+            var result = service.GetForEdit(10, "admin-user", isAdmin: true);
 
             Assert.NotNull(result);
             Assert.Equal("owner-user", result.UserId);
         }
 
         [Fact]
-        public void DeleteAsync_ReturnsFalse_WhenNotOwner()
+        public void Delete_ReturnsFalse_WhenNotOwner()
         {
             var repository = new Mock<HealthRecordRepository>(null!);
             repository.Setup(x => x.SelectById(10))
                 .Returns(new HealthRecordEntity { Id = 10, UserId = "owner-user" });
             var service = new HealthRecordService(repository.Object);
 
-            var result = service.DeleteAsync(10, "other-user", isAdmin: false);
+            var result = service.Delete(10, "other-user", isAdmin: false);
 
             Assert.False(result);
             repository.Verify(x => x.LogicalDelete(It.IsAny<HealthRecordEntity>()), Times.Never);

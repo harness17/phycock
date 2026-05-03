@@ -20,7 +20,7 @@ namespace Phycock.Service
         }
 
         /// <summary>指定日の睡眠記録一覧を取得する。</summary>
-        public List<SleepRecordListViewModel> GetListAsync(string userId, DateTime? filterDate)
+        public List<SleepRecordListViewModel> GetList(string userId, DateTime? filterDate)
         {
             var date = filterDate ?? DateTime.Today;
             return _repository.GetByUserAndDate(userId, date)
@@ -29,7 +29,7 @@ namespace Phycock.Service
         }
 
         /// <summary>指定期間の睡眠記録一覧を取得する。</summary>
-        public List<SleepRecordListViewModel> GetByRangeAsync(string userId, DateTime startDate, DateTime endDate)
+        public List<SleepRecordListViewModel> GetByRange(string userId, DateTime startDate, DateTime endDate)
         {
             return _repository.GetByUserAndRange(userId, startDate, endDate)
                 .Select(ToListViewModel)
@@ -37,7 +37,7 @@ namespace Phycock.Service
         }
 
         /// <summary>Admin 用に指定期間の全ユーザー睡眠記録一覧を取得する。</summary>
-        public List<SleepRecordListViewModel> GetAllListAsync(DateTime startDate, DateTime endDate)
+        public List<SleepRecordListViewModel> GetAllList(DateTime startDate, DateTime endDate)
         {
             return _repository.GetAllByRange(startDate, endDate)
                 .Select(ToListViewModel)
@@ -45,7 +45,7 @@ namespace Phycock.Service
         }
 
         /// <summary>編集対象の睡眠記録を取得する。所有者でも Admin でもない場合は null。</summary>
-        public SleepRecordFormViewModel? GetForEditAsync(long id, string currentUserId, bool isAdmin)
+        public SleepRecordFormViewModel? GetForEdit(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return null;
@@ -66,7 +66,7 @@ namespace Phycock.Service
         }
 
         /// <summary>睡眠記録を新規登録する。</summary>
-        public void CreateAsync(SleepRecordFormViewModel model, string currentUserId, bool isAdmin = false)
+        public void Create(SleepRecordFormViewModel model, string currentUserId, bool isAdmin = false)
         {
             var (startDate, endDate) = BuildSleepDateTimes(model.RecordDate, model.StartTime, model.EndTime);
             var entity = new SleepRecordEntity
@@ -83,7 +83,7 @@ namespace Phycock.Service
         }
 
         /// <summary>睡眠記録を更新する。所有者でも Admin でもない場合は false。</summary>
-        public bool UpdateAsync(SleepRecordFormViewModel model, string currentUserId, bool isAdmin)
+        public bool Update(SleepRecordFormViewModel model, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(model.Id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
@@ -100,7 +100,7 @@ namespace Phycock.Service
         }
 
         /// <summary>睡眠記録を論理削除する。所有者でも Admin でもない場合は false。</summary>
-        public bool DeleteAsync(long id, string currentUserId, bool isAdmin)
+        public bool Delete(long id, string currentUserId, bool isAdmin)
         {
             var entity = _repository.SelectById(id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
