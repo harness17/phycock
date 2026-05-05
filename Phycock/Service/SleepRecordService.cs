@@ -1,4 +1,6 @@
+using Phycock.Common;
 using Phycock.Entity;
+using Phycock.Entity.Enums;
 using Phycock.Models;
 using Phycock.Repository;
 
@@ -44,6 +46,16 @@ namespace Phycock.Service
                 .ToList();
         }
 
+        /// <summary>FullCalendar 用イベントを取得する。</summary>
+        public List<SleepRecordCalendarEventDto> GetEventsForCalendar(string userId, DateTime startDate, DateTime endDate)
+        {
+            if (string.IsNullOrWhiteSpace(userId) || endDate <= startDate) return new List<SleepRecordCalendarEventDto>();
+
+            return _repository.GetByUserAndRange(userId, startDate, endDate.AddDays(-1))
+                .Select(ToCalendarEventDto)
+                .ToList();
+        }
+
         /// <summary>編集対象の睡眠記録を取得する。所有者でも Admin でもない場合は null。</summary>
         public SleepRecordFormViewModel? GetForEdit(long id, string currentUserId, bool isAdmin)
         {
@@ -60,8 +72,6 @@ namespace Phycock.Service
             {
                 UserId = currentUserId,
                 RecordDate = recordDate ?? DateTime.Today,
-                StartTime = new TimeOnly(22, 0),
-                EndTime = new TimeOnly(6, 0),
             };
         }
 
@@ -134,6 +144,22 @@ namespace Phycock.Service
             };
         }
 
+        private static SleepRecordCalendarEventDto ToCalendarEventDto(SleepRecordEntity entity)
+        {
+            var duration = entity.EndDate.HasValue && entity.EndDate.Value > entity.StartDate
+                ? $" {entity.EndDate.Value.Subtract(entity.StartDate).TotalHours:0.0}h"
+                : "";
+
+            return new SleepRecordCalendarEventDto
+            {
+                Id = entity.Id.ToString(),
+                Title = $"{entity.SleepType.GetDisplayName()}{duration}",
+                Start = entity.StartDate.ToString("s"),
+                End = entity.EndDate?.ToString("s"),
+                Color = entity.SleepType == SleepType.DaytimeNap ? "#20c997" : "#6610f2",
+            };
+        }
+
         private static SleepRecordFormViewModel ToFormViewModel(SleepRecordEntity entity)
         {
             return new SleepRecordFormViewModel
@@ -152,10 +178,10 @@ namespace Phycock.Service
 
         public static (DateTime StartDate, DateTime? EndDate) BuildSleepDateTimes(
             DateTime recordDate,
-            TimeOnly startTime,
+            TimeOnly? startTime,
             TimeOnly? endTime)
         {
-            var startDate = recordDate.Date.Add(startTime.ToTimeSpan());
+            var startDate = recordDate.Date.Add((startTime ?? TimeOnly.MinValue).ToTimeSpan());
             if (!endTime.HasValue) return (startDate, null);
 
             var endDate = recordDate.Date.Add(endTime.Value.ToTimeSpan());

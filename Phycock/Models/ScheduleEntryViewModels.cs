@@ -78,6 +78,15 @@ namespace Phycock.Models
         /// <summary>表示色。</summary>
         public string Color { get; set; } = "";
 
+        /// <summary>背景色。</summary>
+        public string BackgroundColor { get; set; } = "";
+
+        /// <summary>枠線色。</summary>
+        public string BorderColor { get; set; } = "";
+
+        /// <summary>文字色。</summary>
+        public string TextColor { get; set; } = "";
+
         /// <summary>追加属性。</summary>
         public ScheduleEntryExtendedProps ExtendedProps { get; set; } = new();
     }
@@ -87,7 +96,7 @@ namespace Phycock.Models
     /// </summary>
     public class ScheduleEntryExtendedProps
     {
-        /// <summary>時間帯。</summary>
+        /// <summary>時間帯（AM/PM/終日）。</summary>
         public string Session { get; set; } = "";
 
         /// <summary>在宅利用かどうか。</summary>
@@ -98,6 +107,9 @@ namespace Phycock.Models
 
         /// <summary>活動種別。</summary>
         public string ActivityType { get; set; } = "";
+
+        /// <summary>活動内容の補足。</summary>
+        public string? ActivityNote { get; set; }
     }
 
     /// <summary>

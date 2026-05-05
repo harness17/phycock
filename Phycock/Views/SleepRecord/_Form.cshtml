@@ -16,12 +16,12 @@
         </div>
         <div class="col-md-6">
             <label asp-for="StartTime" class="form-label"></label>
-            <input asp-for="StartTime" type="time" class="form-control" />
+            <input asp-for="StartTime" type="text" value="@(Model.StartTime?.ToString("HH:mm") ?? "")" class="form-control sleep-time-input" inputmode="numeric" maxlength="5" placeholder="22:00" autocomplete="off" data-next-time-input="#EndTime" />
             <span asp-validation-for="StartTime" class="text-danger"></span>
         </div>
         <div class="col-md-6">
             <label asp-for="EndTime" class="form-label"></label>
-            <input asp-for="EndTime" type="time" class="form-control" />
+            <input asp-for="EndTime" type="text" value="@(Model.EndTime?.ToString("HH:mm") ?? "")" class="form-control sleep-time-input" inputmode="numeric" maxlength="5" placeholder="06:00" autocomplete="off" />
             <span asp-validation-for="EndTime" class="text-danger"></span>
         </div>
         <div class="col-12">
@@ -35,3 +35,36 @@
         <a asp-action="Index" class="btn btn-outline-secondary">戻る</a>
     </div>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.sleep-time-input').forEach(function (input) {
+            input.addEventListener('input', function () {
+                const normalized = normalizeSleepTime(input.value);
+                if (normalized) {
+                    input.value = normalized;
+                    const nextSelector = input.getAttribute('data-next-time-input');
+                    if (nextSelector) {
+                        const nextInput = document.querySelector(nextSelector);
+                        if (nextInput) nextInput.focus();
+                    }
+                }
+            });
+        });
+
+        function normalizeSleepTime(value) {
+            const digits = value.replace(/\D/g, '');
+            if (digits.length === 4) {
+                const hour = Number(digits.slice(0, 2));
+                const minute = Number(digits.slice(2, 4));
+                if (hour <= 23 && minute <= 59) {
+                    return digits.slice(0, 2) + ':' + digits.slice(2, 4);
+                }
+            }
+
+            if (/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) return value;
+
+            return '';
+        }
+    });
+</script>

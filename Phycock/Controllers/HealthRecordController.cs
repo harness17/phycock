@@ -46,6 +46,16 @@ namespace Phycock.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetEvents(DateTime start, DateTime end)
+        {
+            var userId = User.IsInRole("Admin")
+                ? await _userManagementService.GetSelectedMemberUserIdAsync()
+                : GetCurrentUserId();
+
+            return Json(_service.GetEventsForCalendar(userId, start, end));
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Create(DateTime? recordDate)
         {
             var userId = User.IsInRole("Admin")
@@ -55,23 +65,56 @@ namespace Phycock.Controllers
             return View(_service.BuildCreateForm(userId, recordDate));
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetDisabledTimings(DateTime recordDate, long? id)
+        {
+            var userId = User.IsInRole("Admin")
+                ? await _userManagementService.GetSelectedMemberUserIdAsync()
+                : GetCurrentUserId();
+
+            if (id.HasValue)
+            {
+                var existing = _service.GetForEdit(id.Value, GetCurrentUserId(), User.IsInRole("Admin"));
+                if (existing == null) return StatusCode(StatusCodes.Status403Forbidden);
+                userId = existing.UserId;
+            }
+
+            var disabled = _service.GetDisabledRecordTimings(userId, recordDate, id)
+                .Select(x => ((int)x).ToString())
+                .ToList();
+
+            return Json(disabled);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(HealthRecordFormViewModel model)
         {
+            if (User.IsInRole("Admin"))
+            {
+                model.UserId = await _userManagementService.GetSelectedMemberUserIdAsync();
+                if (string.IsNullOrWhiteSpace(model.UserId)) return StatusCode(StatusCodes.Status403Forbidden);
+            }
+            else
+            {
+                model.UserId = GetCurrentUserId();
+            }
+
+            ValidateDuplicate(model);
+
             if (!ModelState.IsValid)
             {
                 _service.FillSelections(model);
                 return View(model);
             }
 
-            if (User.IsInRole("Admin"))
+            if (!_service.Create(model, GetCurrentUserId(), User.IsInRole("Admin")))
             {
-                model.UserId = await _userManagementService.GetSelectedMemberUserIdAsync();
-                if (string.IsNullOrWhiteSpace(model.UserId)) return StatusCode(StatusCodes.Status403Forbidden);
+                AddDuplicateModelError();
+                _service.FillSelections(model);
+                return View(model);
             }
 
-            _service.Create(model, GetCurrentUserId(), User.IsInRole("Admin"));
             return RedirectToAction(nameof(Index), new { filterDate = model.RecordDate.ToString("yyyy-MM-dd") });
         }
 
@@ -87,6 +130,12 @@ namespace Phycock.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(HealthRecordFormViewModel model)
         {
+            var existing = _service.GetForEdit(model.Id, GetCurrentUserId(), User.IsInRole("Admin"));
+            if (existing == null) return StatusCode(StatusCodes.Status403Forbidden);
+            model.UserId = existing.UserId;
+
+            ValidateDuplicate(model);
+
             if (!ModelState.IsValid)
             {
                 _service.FillSelections(model);
@@ -109,5 +158,14 @@ namespace Phycock.Controllers
 
         private string GetCurrentUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        private void ValidateDuplicate(HealthRecordFormViewModel model)
+        {
+            if (_service.IsDuplicate(model.UserId, model.RecordDate, model.RecordTiming, model.Id == 0 ? null : model.Id))
+                AddDuplicateModelError();
+        }
+
+        private void AddDuplicateModelError()
+            => ModelState.AddModelError(nameof(HealthRecordFormViewModel.RecordTiming), "同じ日の同じタイミングの体調記録は既に登録されています。");
     }
 }

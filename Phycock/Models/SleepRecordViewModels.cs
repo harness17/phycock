@@ -22,7 +22,7 @@ namespace Phycock.Models
 
         /// <summary>睡眠開始日時。</summary>
         [Display(Name = "開始日時")]
-        public DateTime StartDate { get; set; } = DateTime.Today.AddHours(22);
+        public DateTime StartDate { get; set; }
 
         /// <summary>睡眠終了日時。</summary>
         [Display(Name = "終了日時")]
@@ -32,12 +32,12 @@ namespace Phycock.Models
         [Required(ErrorMessage = "開始時刻は必須です")]
         [DataType(DataType.Time)]
         [Display(Name = "開始時刻")]
-        public TimeOnly StartTime { get; set; } = new(22, 0);
+        public TimeOnly? StartTime { get; set; }
 
         /// <summary>睡眠終了時刻。</summary>
         [DataType(DataType.Time)]
         [Display(Name = "終了時刻")]
-        public TimeOnly? EndTime { get; set; } = new(6, 0);
+        public TimeOnly? EndTime { get; set; }
 
         /// <summary>睡眠種別。</summary>
         [Display(Name = "睡眠種別")]
@@ -77,5 +77,26 @@ namespace Phycock.Models
 
         /// <summary>自由記入メモ。</summary>
         public string? Memo { get; set; }
+    }
+
+    /// <summary>
+    /// FullCalendar に渡す睡眠記録 JSON DTO。
+    /// </summary>
+    public class SleepRecordCalendarEventDto
+    {
+        /// <summary>イベント ID。</summary>
+        public string Id { get; set; } = "";
+
+        /// <summary>表示タイトル。</summary>
+        public string Title { get; set; } = "";
+
+        /// <summary>開始日時（ISO 8601）。</summary>
+        public string Start { get; set; } = "";
+
+        /// <summary>終了日時（ISO 8601）。</summary>
+        public string? End { get; set; }
+
+        /// <summary>表示色。</summary>
+        public string Color { get; set; } = "";
     }
 }

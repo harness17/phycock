@@ -20,6 +20,12 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <script>
         let calendar;
+        const scheduleEntryUrls = {
+            events: '@Url.Action("GetEvents", "ScheduleEntry")',
+            createPartial: '@Url.Action("CreatePartial", "ScheduleEntry")',
+            editPartialBase: '@Url.Action("EditPartial", "ScheduleEntry")',
+            delete: '@Url.Action("Delete", "ScheduleEntry")'
+        };
         const modalElement = document.getElementById('entryModal');
         const entryModal = new bootstrap.Modal(modalElement);
 
@@ -47,7 +53,7 @@
         function updateProgramTypeVisibility($form) {
             const isProgram = $form.find('[name="ActivityType"]').val() === '0';
             const $programTypeField = $form.find('[data-program-type-field]');
-            $programTypeField.toggle(isProgram);
+            $programTypeField.css('visibility', isProgram ? 'visible' : 'hidden');
             if (!isProgram) {
                 $form.find('[name="ProgramType"]').val('');
             }
@@ -72,7 +78,7 @@
 
         function deleteScheduleEntry(button) {
             const token = $(button).closest('form').find('input[name="__RequestVerificationToken"]').val();
-            $.post('/ScheduleEntry/Delete', {
+            $.post(scheduleEntryUrls.delete, {
                 id: $(button).data('id'),
                 __RequestVerificationToken: token
             }, function (response) {
@@ -89,19 +95,61 @@
                 locale: 'ja',
                 height: 'auto',
                 selectable: true,
-                events: '/ScheduleEntry/GetEvents',
+                eventDisplay: 'block',
+                events: scheduleEntryUrls.events,
+                eventContent: function (info) {
+                    const session = info.event.extendedProps.session || '';
+                    const activityNote = info.event.extendedProps.activityNote || '';
+                    const timeAndPlace = info.event.extendedProps.isAtHome
+                        ? `${info.timeText} 在宅`.trim()
+                        : info.timeText;
+                    const textColor = info.event.textColor || '#212529';
+                    const container = document.createElement('div');
+                    container.style.padding = '1px 3px';
+                    container.style.fontSize = '0.8em';
+                    container.style.lineHeight = '1.3';
+                    container.style.color = textColor;
+                    const sessionEl = document.createElement('div');
+                    sessionEl.style.fontWeight = 'bold';
+                    sessionEl.textContent = timeAndPlace
+                        ? `${session} ${timeAndPlace}`
+                        : session;
+                    container.appendChild(sessionEl);
+                    if (activityNote) {
+                        const noteEl = document.createElement('div');
+                        noteEl.style.whiteSpace = 'pre-line';
+                        noteEl.textContent = activityNote;
+                        container.appendChild(noteEl);
+                    }
+                    return { domNodes: [container] };
+                },
+                eventDidMount: function (info) {
+                    if (info.event.backgroundColor) {
+                        info.el.style.backgroundColor = info.event.backgroundColor;
+                    }
+                    if (info.event.borderColor) {
+                        info.el.style.borderColor = info.event.borderColor;
+                    }
+                    if (info.event.textColor) {
+                        info.el.style.color = info.event.textColor;
+                        const main = info.el.querySelector('.fc-event-main');
+                        if (main) {
+                            main.style.color = info.event.textColor;
+                        }
+                    }
+                },
                 dateClick: function (info) {
-                    loadForm('/ScheduleEntry/CreatePartial?date=' + info.dateStr);
+                    loadForm(scheduleEntryUrls.createPartial + '?date=' + encodeURIComponent(info.dateStr));
                 },
                 eventClick: function (info) {
-                    loadForm('/ScheduleEntry/EditPartial/' + info.event.id);
+                    loadForm(scheduleEntryUrls.editPartialBase + '/' + info.event.id);
                 }
             });
             calendar.render();
         });
 
         $('#createButton').on('click', function () {
-            loadForm('/ScheduleEntry/CreatePartial');
+            loadForm(scheduleEntryUrls.createPartial);
         });
 
         $(document).on('submit', '.schedule-entry-form', function (e) {

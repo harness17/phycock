@@ -55,6 +55,8 @@ namespace Phycock.Service
                 UserId = currentUserId,
                 Date = date ?? DateOnly.FromDateTime(DateTime.Today),
                 Session = ScheduleSession.AM,
+                ActivityType = ActivityType.Program,
+                ProgramType = ProgramType.SelfWork,
                 StartTime = new TimeOnly(9, 0),
                 EndTime = new TimeOnly(12, 0),
             };
@@ -149,6 +151,7 @@ namespace Phycock.Service
         {
             var start = CombineDateAndTime(entity.Date, entity.StartTime);
             var end = CombineDateAndTime(entity.Date, entity.EndTime);
+            var color = GetColor(entity.ActivityType, entity.ProgramType, entity.IsAtHome);
 
             return new ScheduleEntryJsonDto
             {
@@ -156,13 +159,17 @@ namespace Phycock.Service
                 Title = BuildTitle(entity),
                 Start = start?.ToString("yyyy-MM-ddTHH:mm:ss") ?? entity.Date.ToString("yyyy-MM-dd"),
                 End = end?.ToString("yyyy-MM-ddTHH:mm:ss"),
-                Color = GetColor(entity.Status),
+                Color = color.BackgroundColor,
+                BackgroundColor = color.BackgroundColor,
+                BorderColor = color.BorderColor,
+                TextColor = color.TextColor,
                 ExtendedProps = new ScheduleEntryExtendedProps
                 {
-                    Session = entity.Session.GetDisplayName(),
+                    Session = GetSessionShortLabel(entity.Session),
                     IsAtHome = entity.IsAtHome,
                     Status = entity.Status.GetDisplayName(),
                     ActivityType = entity.ActivityType.GetDisplayName(),
+                    ActivityNote = entity.ActivityNote,
                 },
             };
         }
@@ -193,24 +200,49 @@ namespace Phycock.Service
 
         private static string BuildTitle(ScheduleEntryEntity entity)
         {
-            var place = entity.IsAtHome ? "在宅" : "通所";
-            var activity = entity.ActivityType == ActivityType.Program && entity.ProgramType.HasValue
-                ? entity.ProgramType.Value.GetDisplayName()
-                : entity.ActivityType.GetDisplayName();
-
-            return $"{place} {entity.Session.GetDisplayName()} {activity}";
+            var session = GetSessionShortLabel(entity.Session);
+            return string.IsNullOrEmpty(entity.ActivityNote)
+                ? session
+                : $"{session}\n{entity.ActivityNote}";
         }
 
-        private static string GetColor(ScheduleStatus status)
+        private static string GetSessionShortLabel(ScheduleSession session) => session switch
         {
-            return status switch
+            ScheduleSession.AM => "AM",
+            ScheduleSession.PM => "PM",
+            ScheduleSession.AllDay => "終日",
+            _ => session.GetDisplayName()
+        };
+
+        private static ScheduleEntryColor GetColor(ActivityType activityType, ProgramType? programType, bool isAtHome)
+        {
+            if (isAtHome)
+                return new("#DDEFEF", "#2C9A9A", "#134F4F");
+
+            if (activityType != ActivityType.Program)
             {
-                ScheduleStatus.Attended => "#198754",
-                ScheduleStatus.Absent => "#dc3545",
-                ScheduleStatus.Late => "#fd7e14",
-                ScheduleStatus.EarlyLeave => "#6f42c1",
-                _ => "#0d6efd",
+                return activityType switch
+                {
+                    ActivityType.IndividualTraining => new("#F4E5F8", "#8E44AD", "#4A235A"),
+                    ActivityType.DepartmentActivity => new("#D8EAF7", "#2874A6", "#1B4F72"),
+                    ActivityType.GoOut => new("#D9EAD3", "#6AA84F", "#274E13"),
+                    _ => new("#E7E6E6", "#A6A6A6", "#3C3C3C"),
+                };
+            }
+
+            return programType switch
+            {
+                ProgramType.SelfWork => new("#F8CBAD", "#C55A11", "#4A2300"),
+                ProgramType.HealthCare => new("#E2F0D9", "#70AD47", "#254D1B"),
+                ProgramType.WorkplaceCommunication => new("#E4DFEC", "#8064A2", "#3D2A56"),
+                ProgramType.JobHunting => new("#DDEBF7", "#5B9BD5", "#1F4E79"),
+                ProgramType.ApplicationInterview => new("#F4CCCC", "#C00000", "#7F1D1D"),
+                ProgramType.PreWorkPreparation => new("#DDEBF7", "#2F75B5", "#1F4E79"),
+                ProgramType.OtherFreeInput => new("#FFFFFF", "#ADB5BD", "#343A40"),
+                _ => new("#E7E6E6", "#A6A6A6", "#3C3C3C"),
             };
         }
+
+        private sealed record ScheduleEntryColor(string BackgroundColor, string BorderColor, string TextColor);
     }
 }

@@ -42,3 +42,13 @@ node_modules/
 # Temporary files
 *.tmp
 *.log
+tmp/
+
+# Local Claude worktrees
+.claude/worktrees/
+
+# Local IIS/publish backup files
+*.backup
+
+# Browser verification screenshots
+/*.png

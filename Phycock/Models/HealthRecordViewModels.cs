@@ -24,6 +24,9 @@ namespace Phycock.Models
         [Display(Name = "記録タイミング")]
         public RecordTiming RecordTiming { get; set; } = RecordTiming.Morning;
 
+        /// <summary>登録済みのため選択できない記録タイミング。</summary>
+        public List<RecordTiming> DisabledRecordTimings { get; set; } = new();
+
         /// <summary>選択された症状。</summary>
         [Display(Name = "症状")]
         public List<SymptomType> SelectedSymptoms { get; set; } = new();
@@ -102,5 +105,26 @@ namespace Phycock.Models
 
         /// <summary>自由記入メモ。</summary>
         public string? Memo { get; set; }
+    }
+
+    /// <summary>
+    /// FullCalendar に渡す体調記録 JSON DTO。
+    /// </summary>
+    public class HealthRecordCalendarEventDto
+    {
+        /// <summary>イベント ID。</summary>
+        public string Id { get; set; } = "";
+
+        /// <summary>表示タイトル。</summary>
+        public string Title { get; set; } = "";
+
+        /// <summary>開始日（ISO 8601）。</summary>
+        public string Start { get; set; } = "";
+
+        /// <summary>終日イベントかどうか。</summary>
+        public bool AllDay { get; set; } = true;
+
+        /// <summary>表示色。</summary>
+        public string Color { get; set; } = "";
     }
 }

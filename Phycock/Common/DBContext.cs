@@ -33,6 +33,11 @@ namespace Phycock.Common
             {
                 property.SetColumnType("datetime2");
             }
+
+            modelBuilder.Entity<HealthRecordEntity>()
+                .HasIndex(x => new { x.UserId, x.RecordDate, x.RecordTiming })
+                .IsUnique()
+                .HasFilter("[DelFlag] = 0");
         }
 
         #region DbSet

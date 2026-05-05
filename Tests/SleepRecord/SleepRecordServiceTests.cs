@@ -50,6 +50,35 @@ namespace Tests.SleepRecord
         }
 
         [Fact]
+        public void GetEventsForCalendar_ReturnsCalendarEvents()
+        {
+            var repository = new Mock<SleepRecordRepository>(null!);
+            repository.Setup(x => x.GetByUserAndRange("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 5, 31)))
+                .Returns(new List<SleepRecordEntity>
+                {
+                    new()
+                    {
+                        Id = 20,
+                        UserId = "user-1",
+                        RecordDate = new DateTime(2026, 5, 3),
+                        StartDate = new DateTime(2026, 5, 3, 22, 0, 0),
+                        EndDate = new DateTime(2026, 5, 4, 6, 0, 0),
+                        SleepType = SleepType.NightSleep,
+                    },
+                });
+            var service = new SleepRecordService(repository.Object);
+
+            var result = service.GetEventsForCalendar("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 6, 1));
+
+            var item = Assert.Single(result);
+            Assert.Equal("20", item.Id);
+            Assert.Equal("本睡眠 8.0h", item.Title);
+            Assert.Equal("2026-05-03T22:00:00", item.Start);
+            Assert.Equal("2026-05-04T06:00:00", item.End);
+            Assert.Equal("#6610f2", item.Color);
+        }
+
+        [Fact]
         public void GetForEdit_ReturnsNull_WhenNotOwner()
         {
             var repository = new Mock<SleepRecordRepository>(null!);

@@ -38,6 +38,16 @@ namespace Phycock.Service
                 .ToList();
         }
 
+        /// <summary>FullCalendar 用イベントを取得する。</summary>
+        public List<HealthRecordCalendarEventDto> GetEventsForCalendar(string userId, DateTime startDate, DateTime endDate)
+        {
+            if (string.IsNullOrWhiteSpace(userId) || endDate <= startDate) return new List<HealthRecordCalendarEventDto>();
+
+            return _repository.GetByUserAndRange(userId, startDate, endDate.AddDays(-1))
+                .Select(ToCalendarEventDto)
+                .ToList();
+        }
+
         /// <summary>編集対象の体調記録を取得する。所有者でも Admin でもない場合は null。</summary>
         public HealthRecordFormViewModel? GetForEdit(long id, string currentUserId, bool isAdmin)
         {
@@ -68,19 +78,24 @@ namespace Phycock.Service
         /// <summary>作成フォーム ViewModel を生成する。</summary>
         public HealthRecordFormViewModel BuildCreateForm(string currentUserId, DateTime? recordDate = null)
         {
-            return new HealthRecordFormViewModel
+            var form = new HealthRecordFormViewModel
             {
                 UserId = currentUserId,
                 RecordDate = recordDate ?? DateTime.Today,
             };
+
+            return FillSelections(form);
         }
 
         /// <summary>体調記録を新規登録する。</summary>
-        public void Create(HealthRecordFormViewModel model, string currentUserId, bool isAdmin = false)
+        public bool Create(HealthRecordFormViewModel model, string currentUserId, bool isAdmin = false)
         {
+            var targetUserId = isAdmin && !string.IsNullOrWhiteSpace(model.UserId) ? model.UserId : currentUserId;
+            if (IsDuplicate(targetUserId, model.RecordDate, model.RecordTiming)) return false;
+
             var entity = new HealthRecordEntity
             {
-                UserId = isAdmin && !string.IsNullOrWhiteSpace(model.UserId) ? model.UserId : currentUserId,
+                UserId = targetUserId,
                 RecordDate = model.RecordDate.Date,
                 RecordTiming = model.RecordTiming,
                 SymptomFlags = ToFlags(model.SelectedSymptoms),
@@ -90,6 +105,7 @@ namespace Phycock.Service
             };
 
             _repository.Insert(entity);
+            return true;
         }
 
         /// <summary>体調記録を更新する。所有者でも Admin でもない場合は false。</summary>
@@ -97,6 +113,7 @@ namespace Phycock.Service
         {
             var entity = _repository.SelectById(model.Id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
+            if (IsDuplicate(entity.UserId, model.RecordDate, model.RecordTiming, model.Id)) return false;
 
             entity.RecordDate = model.RecordDate.Date;
             entity.RecordTiming = model.RecordTiming;
@@ -107,6 +124,14 @@ namespace Phycock.Service
 
             _repository.Update(entity);
             return true;
+        }
+
+        /// <summary>同一ユーザー・同一日・同一タイミングの記録が存在するか確認する。</summary>
+        public bool IsDuplicate(string userId, DateTime recordDate, RecordTiming recordTiming, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return false;
+
+            return _repository.ExistsByUserDateTiming(userId, recordDate, recordTiming, excludeId);
         }
 
         /// <summary>体調記録を論理削除する。所有者でも Admin でもない場合は false。</summary>
@@ -146,7 +171,27 @@ namespace Phycock.Service
         /// <summary>バリデーション再表示用の補完処理。</summary>
         public HealthRecordFormViewModel FillSelections(HealthRecordFormViewModel model)
         {
+            model.DisabledRecordTimings = GetDisabledRecordTimings(model.UserId, model.RecordDate, model.Id == 0 ? null : model.Id);
+            if (model.Id == 0 && model.DisabledRecordTimings.Contains(model.RecordTiming))
+            {
+                var firstSelectable = Enum.GetValues<RecordTiming>()
+                    .FirstOrDefault(x => !model.DisabledRecordTimings.Contains(x));
+                model.RecordTiming = firstSelectable;
+            }
+
             return model;
+        }
+
+        /// <summary>指定日の登録済みタイミング一覧を取得する。</summary>
+        public List<RecordTiming> GetDisabledRecordTimings(string userId, DateTime recordDate, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(userId)) return new List<RecordTiming>();
+
+            return (_repository.GetByUserAndDate(userId, recordDate) ?? new List<HealthRecordEntity>())
+                .Where(x => !excludeId.HasValue || x.Id != excludeId.Value)
+                .Select(x => x.RecordTiming)
+                .Distinct()
+                .ToList();
         }
 
         private static HealthRecordListViewModel ToListViewModel(HealthRecordEntity entity)
@@ -162,6 +207,30 @@ namespace Phycock.Service
                 Condition = entity.Condition,
                 Feeling = entity.Feeling,
                 Memo = entity.Memo,
+            };
+        }
+
+        private static HealthRecordCalendarEventDto ToCalendarEventDto(HealthRecordEntity entity)
+        {
+            return new HealthRecordCalendarEventDto
+            {
+                Id = entity.Id.ToString(),
+                Title = $"{entity.RecordTiming.GetDisplayName()} 体調:{entity.Condition.GetDisplayName()} 気分:{entity.Feeling.GetDisplayName()}",
+                Start = entity.RecordDate.ToString("yyyy-MM-dd"),
+                Color = GetConditionColor(entity.Condition),
+            };
+        }
+
+        private static string GetConditionColor(ConditionLevel condition)
+        {
+            return condition switch
+            {
+                ConditionLevel.VeryGood => "#198754",
+                ConditionLevel.Good => "#20c997",
+                ConditionLevel.Normal => "#0d6efd",
+                ConditionLevel.Bad => "#fd7e14",
+                ConditionLevel.VeryBad => "#dc3545",
+                _ => "#6c757d",
             };
         }
 

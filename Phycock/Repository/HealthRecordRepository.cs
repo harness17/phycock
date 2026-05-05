@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Phycock.Common;
 using Phycock.Entity;
+using Phycock.Entity.Enums;
 
 namespace Phycock.Repository
 {
@@ -62,6 +63,21 @@ namespace Phycock.Repository
                 .OrderBy(x => x.RecordTiming)
                 .ThenBy(x => x.Id)
                 .ToList();
+        }
+
+        /// <summary>指定ユーザー・日付・タイミングの体調記録が存在するか確認する。</summary>
+        public virtual bool ExistsByUserDateTiming(string userId, DateTime recordDate, RecordTiming recordTiming, long? excludeId = null)
+        {
+            var start = recordDate.Date;
+            var end = start.AddDays(1);
+
+            return _context.HealthRecord
+                .AsNoTracking()
+                .Where(x => x.UserId == userId && !x.DelFlag)
+                .Where(x => x.RecordDate >= start && x.RecordDate < end)
+                .Where(x => x.RecordTiming == recordTiming)
+                .Where(x => !excludeId.HasValue || x.Id != excludeId.Value)
+                .Any();
         }
 
         /// <summary>指定ユーザー・指定期間の体調記録を取得する。</summary>

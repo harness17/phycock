@@ -15,7 +15,14 @@
         <select onchange="funcRecordNumber(value)" class="form-select form-select-sm" style="width:auto;">
             @foreach (var item in Model.RecoedNumberList)
             {
-                <option value="@item.Value" @(item.Value == Model.RecordNum.ToString() ? "selected" : "")>@item.Text</option>
+                if (item.Value == Model.RecordNum.ToString())
+                {
+                    <option value="@item.Value" selected>@item.Text</option>
+                }
+                else
+                {
+                    <option value="@item.Value">@item.Text</option>
+                }
             }
         </select>
     </div>

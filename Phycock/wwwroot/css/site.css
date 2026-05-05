@@ -38,3 +38,61 @@ html {
 .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* ===== 記録カレンダー ===== */
+.record-calendar {
+  --record-calendar-day-min-height: 128px;
+}
+
+.record-calendar.record-calendar--health {
+  --record-calendar-day-min-height: 156px;
+}
+
+.record-calendar .fc-toolbar {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.record-calendar .fc-daygrid-day-frame {
+  min-height: var(--record-calendar-day-min-height);
+}
+
+.record-calendar .fc-daygrid-day-events {
+  margin-top: 0.25rem;
+}
+
+.record-calendar .fc-daygrid-event {
+  align-items: flex-start;
+  border-radius: 0.25rem;
+  margin-top: 0.18rem;
+  padding: 0.1rem 0.25rem;
+  white-space: normal;
+}
+
+.record-calendar .fc-daygrid-event .fc-event-title,
+.record-calendar .fc-daygrid-event .fc-event-time {
+  overflow: visible;
+  white-space: normal;
+}
+
+.record-calendar .fc-event-title {
+  line-height: 1.25;
+}
+
+@media (max-width: 767.98px) {
+  .record-calendar {
+    --record-calendar-day-min-height: 104px;
+  }
+
+  .record-calendar.record-calendar--health {
+    --record-calendar-day-min-height: 124px;
+  }
+
+  .record-calendar .fc-toolbar-title {
+    font-size: 1.15rem;
+  }
+
+  .record-calendar .fc-daygrid-event {
+    font-size: 0.75rem;
+  }
+}

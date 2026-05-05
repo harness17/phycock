@@ -21,6 +21,9 @@ namespace Phycock.AutoMapperProfiles
                 .ForMember(dest => dest.Start, opt => opt.Ignore())
                 .ForMember(dest => dest.End, opt => opt.Ignore())
                 .ForMember(dest => dest.Color, opt => opt.Ignore())
+                .ForMember(dest => dest.BackgroundColor, opt => opt.Ignore())
+                .ForMember(dest => dest.BorderColor, opt => opt.Ignore())
+                .ForMember(dest => dest.TextColor, opt => opt.Ignore())
                 .ForMember(dest => dest.ExtendedProps, opt => opt.Ignore());
         }
     }

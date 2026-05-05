@@ -17,11 +17,13 @@ namespace Phycock.Controllers
         private const string DatabaseErrorMessage = "データベース処理中にエラーが発生しました。しばらく時間をおいてから再度お試しください。";
 
         private readonly StatisticsService _service;
+        private readonly UserManagementService _userManagementService;
         private readonly Logger _logger = Logger.GetLogger();
 
-        public StatisticsController(StatisticsService service)
+        public StatisticsController(StatisticsService service, UserManagementService userManagementService)
         {
             _service = service;
+            _userManagementService = userManagementService;
         }
 
         [HttpGet]
@@ -31,11 +33,11 @@ namespace Phycock.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetHealthWeekly(DateTime weekStart)
+        public async Task<IActionResult> GetHealthWeekly(DateTime weekStart)
         {
             try
             {
-                return Json(_service.GetWeeklyHealthStats(GetCurrentUserId(), weekStart));
+                return Json(_service.GetWeeklyHealthStats(await ResolveTargetUserIdAsync(), weekStart));
             }
             catch (Exception ex)
             {
@@ -45,11 +47,11 @@ namespace Phycock.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetHealthMonthly(int year, int month)
+        public async Task<IActionResult> GetHealthMonthly(int year, int month)
         {
             try
             {
-                return Json(_service.GetMonthlyHealthStats(GetCurrentUserId(), year, month));
+                return Json(_service.GetMonthlyHealthStats(await ResolveTargetUserIdAsync(), year, month));
             }
             catch (Exception ex)
             {
@@ -59,11 +61,11 @@ namespace Phycock.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetSleepWeekly(DateTime weekStart)
+        public async Task<IActionResult> GetSleepWeekly(DateTime weekStart)
         {
             try
             {
-                return Json(_service.GetWeeklySleepStats(GetCurrentUserId(), weekStart));
+                return Json(_service.GetWeeklySleepStats(await ResolveTargetUserIdAsync(), weekStart));
             }
             catch (Exception ex)
             {
@@ -74,5 +76,10 @@ namespace Phycock.Controllers
 
         private string GetCurrentUserId()
             => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+
+        private async Task<string> ResolveTargetUserIdAsync()
+            => User.IsInRole("Admin")
+                ? await _userManagementService.GetSelectedMemberUserIdAsync()
+                : GetCurrentUserId();
     }
 }

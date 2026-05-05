@@ -81,6 +81,7 @@ namespace Phycock.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ScheduleEntryFormViewModel model)
         {
+            ValidateProgramType(model);
             ValidateTimeRange(model);
             if (!ModelState.IsValid) return PartialView("_CreatePartial", model);
 
@@ -114,6 +115,7 @@ namespace Phycock.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(ScheduleEntryFormViewModel model)
         {
+            ValidateProgramType(model);
             ValidateTimeRange(model);
             if (!ModelState.IsValid) return PartialView("_EditPartial", model);
 
@@ -151,6 +153,12 @@ namespace Phycock.Controllers
         {
             if (model.StartTime.HasValue && model.EndTime.HasValue && model.EndTime.Value <= model.StartTime.Value)
                 ModelState.AddModelError(nameof(model.EndTime), "終了時刻は開始時刻より後に設定してください。");
+        }
+
+        private void ValidateProgramType(ScheduleEntryFormViewModel model)
+        {
+            if (model.ActivityType == Phycock.Entity.Enums.ActivityType.Program && !model.ProgramType.HasValue)
+                ModelState.AddModelError(nameof(model.ProgramType), "プログラム種別を選択してください。");
         }
 
         private string GetCurrentUserId()

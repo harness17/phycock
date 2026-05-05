@@ -38,6 +38,16 @@ namespace Phycock.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetEvents(DateTime start, DateTime end)
+        {
+            var userId = User.IsInRole("Admin")
+                ? await _userManagementService.GetSelectedMemberUserIdAsync()
+                : GetCurrentUserId();
+
+            return Json(_service.GetEventsForCalendar(userId, start, end));
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Create(DateTime? recordDate)
         {
             var userId = User.IsInRole("Admin")

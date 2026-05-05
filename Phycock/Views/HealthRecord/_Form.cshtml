@@ -12,7 +12,22 @@
         </div>
         <div class="col-md-4">
             <label asp-for="RecordTiming" class="form-label"></label>
-            <select asp-for="RecordTiming" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.RecordTiming>()" class="form-select"></select>
+            <select asp-for="RecordTiming" class="form-select" data-health-record-timing-select>
+                @foreach (var timing in Enum.GetValues<RecordTiming>())
+                {
+                    var disabled = Model.DisabledRecordTimings.Contains(timing);
+                    var selected = Model.RecordTiming == timing;
+                    if (selected)
+                    {
+                        <option value="@((int)timing)" disabled="@disabled" selected>@timing.GetDisplayName()</option>
+                    }
+                    else
+                    {
+                        <option value="@((int)timing)" disabled="@disabled">@timing.GetDisplayName()</option>
+                    }
+                }
+            </select>
+            <span asp-validation-for="RecordTiming" class="text-danger"></span>
         </div>
         <div class="col-md-2">
             <label asp-for="Condition" class="form-label"></label>
@@ -47,3 +62,47 @@
         <a asp-action="Index" class="btn btn-outline-secondary">戻る</a>
     </div>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dateInput = document.getElementById('RecordDate');
+        const timingSelect = document.querySelector('[data-health-record-timing-select]');
+        const idInput = document.getElementById('Id');
+        if (!dateInput || !timingSelect) return;
+
+        dateInput.addEventListener('change', function () {
+            refreshDisabledTimings();
+        });
+
+        function refreshDisabledTimings() {
+            const params = new URLSearchParams({ recordDate: dateInput.value });
+            if (idInput && idInput.value && idInput.value !== '0') {
+                params.append('id', idInput.value);
+            }
+
+            fetch('@Url.Action("GetDisabledTimings", "HealthRecord")?' + params.toString(), {
+                headers: { 'Accept': 'application/json' }
+            })
+                .then(function (response) {
+                    if (!response.ok) return [];
+                    return response.json();
+                })
+                .then(function (disabledValues) {
+                    applyDisabledTimings(disabledValues.map(String));
+                });
+        }
+
+        function applyDisabledTimings(disabledValues) {
+            Array.from(timingSelect.options).forEach(function (option) {
+                option.disabled = disabledValues.includes(option.value);
+            });
+
+            if (timingSelect.selectedOptions.length > 0 && timingSelect.selectedOptions[0].disabled) {
+                const firstEnabled = Array.from(timingSelect.options).find(function (option) {
+                    return !option.disabled;
+                });
+                if (firstEnabled) timingSelect.value = firstEnabled.value;
+            }
+        }
+    });
+</script>

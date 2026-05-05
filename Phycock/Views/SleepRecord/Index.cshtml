@@ -8,54 +8,45 @@
     <a asp-action="Create" asp-route-recordDate="@ViewBag.FilterDate" class="btn btn-primary"><i class="fas fa-plus me-1"></i>追加</a>
 </div>
 
-<form method="get" class="row g-2 align-items-end mb-3">
-    <div class="col-sm-4 col-md-3">
-        <label for="filterDate" class="form-label">日付</label>
-        <input id="filterDate" name="filterDate" type="date" value="@ViewBag.FilterDate" class="form-control" />
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-outline-primary">表示</button>
-    </div>
-</form>
+<div id="sleepCalendar" class="record-calendar record-calendar--sleep"></div>
 
-<div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead>
-            <tr>
-                <th>記録日</th>
-                @if (ViewBag.IsAdmin == true)
-                {
-                    <th>ユーザーID</th>
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script>
+        const sleepRecordUrls = {
+            events: '@Url.Action("GetEvents", "SleepRecord")',
+            create: '@Url.Action("Create", "SleepRecord")',
+            editBase: '@Url.Action("Edit", "SleepRecord")'
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendar = new FullCalendar.Calendar(document.getElementById('sleepCalendar'), {
+                initialView: 'dayGridMonth',
+                locale: 'ja',
+                height: 'auto',
+                dayMaxEvents: false,
+                selectable: true,
+                displayEventTime: true,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,listMonth'
+                },
+                buttonText: {
+                    today: '今日',
+                    month: '月',
+                    list: '一覧'
+                },
+                events: sleepRecordUrls.events,
+                dateClick: function (info) {
+                    window.location.href = sleepRecordUrls.create + '?recordDate=' + encodeURIComponent(info.dateStr);
+                },
+                eventClick: function (info) {
+                    window.location.href = sleepRecordUrls.editBase + '/' + info.event.id;
                 }
-                <th>種別</th>
-                <th>開始</th>
-                <th>終了</th>
-                <th>時間</th>
-                <th class="text-end">操作</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.RecordDate.ToString("yyyy/MM/dd")</td>
-                @if (ViewBag.IsAdmin == true)
-                {
-                    <td>@item.UserId</td>
-                }
-                <td>@item.SleepType.GetDisplayName()</td>
-                <td>@item.StartDate.ToString("yyyy/MM/dd HH:mm")</td>
-                <td>@(item.EndDate?.ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
-                <td>@(item.Duration?.TotalHours.ToString("0.0") ?? "-")</td>
-                <td class="text-end">
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">編集</a>
-                    <form asp-action="Delete" method="post" class="d-inline">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <button type="submit" class="btn btn-sm btn-outline-danger">削除</button>
-                    </form>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
-</div>
+            });
+            calendar.render();
+        });
+    </script>
+}

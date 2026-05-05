@@ -56,6 +56,11 @@
         let weeklyHealthChart;
         let weeklySleepChart;
         let monthlyHealthChart;
+        const statisticsUrls = {
+            healthWeekly: '@Url.Action("GetHealthWeekly", "Statistics")',
+            sleepWeekly: '@Url.Action("GetSleepWeekly", "Statistics")',
+            healthMonthly: '@Url.Action("GetHealthMonthly", "Statistics")'
+        };
 
         function toDateInputValue(date) {
             return date.toISOString().slice(0, 10);
@@ -93,7 +98,7 @@
         function loadStats() {
             const weekStart = $('#weekStart').val();
             const date = new Date(weekStart + 'T00:00:00');
-            $.get('/Statistics/GetHealthWeekly', { weekStart: weekStart }, function (data) {
+            $.get(statisticsUrls.healthWeekly, { weekStart: weekStart }, function (data) {
                 weeklyHealthChart = createOrUpdateLineChart(
                     weeklyHealthChart,
                     'weeklyHealthChart',
@@ -101,14 +106,14 @@
                     data.conditionData,
                     data.feelingData);
             });
-            $.get('/Statistics/GetSleepWeekly', { weekStart: weekStart }, function (data) {
+            $.get(statisticsUrls.sleepWeekly, { weekStart: weekStart }, function (data) {
                 weeklySleepChart = createOrUpdateBarChart(
                     weeklySleepChart,
                     'weeklySleepChart',
                     data.labels,
                     data.sleepHoursData);
             });
-            $.get('/Statistics/GetHealthMonthly', { year: date.getFullYear(), month: date.getMonth() + 1 }, function (data) {
+            $.get(statisticsUrls.healthMonthly, { year: date.getFullYear(), month: date.getMonth() + 1 }, function (data) {
                 monthlyHealthChart = createOrUpdateLineChart(
                     monthlyHealthChart,
                     'monthlyHealthChart',

@@ -9,6 +9,22 @@
             "command": "powershell -Command \"$json = $input | ConvertFrom-Json; $filePath = $json.tool_input.file_path ?? $json.tool_response.filePath; if ($filePath -match '\\.cs$') { Write-Host \\\"Formatting: $filePath\\\"; dotnet format \\\"$filePath\\\" --no-restore 2>&1 | Select-Object -First 10; } else { Write-Host \\\"Skipping non-C# file: $filePath\\\" }\"",
             "timeout": 60,
             "statusMessage": "Formatting C# code..."
+          },
+          {
+            "type": "command",
+            "command": "$json = $input | ConvertFrom-Json; $fp = $json.tool_input.file_path; if ($fp -and ($fp -match '\\.(cs|cshtml|ts|js)$')) { Set-Content -Path (Join-Path $env:TEMP 'phycock_needs_verify.flag') -Value '1' -NoNewline }",
+            "shell": "powershell"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $f = Join-Path $env:TEMP 'phycock_needs_verify.flag'; if (Test-Path $f) { $msg = 'コードファイル(.cs/.cshtml/.ts/.js)が変更されています。deverop-after.md のルールに従い、Playwright MCP でブラウザ検証を完了してください。確認観点: 正常系(スクリーンショット必須)/表示の正確さ/バリデーション。完了後 Bash で Remove-Item ' + $f + ' を実行してから終了してください。'; ConvertTo-Json -Compress -InputObject @{ hookSpecificOutput = @{ hookEventName = 'Stop'; additionalContext = $msg } } -Depth 3 }",
+            "shell": "powershell"
           }
         ]
       }
