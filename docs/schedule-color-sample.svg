@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720">
+  <rect width="1120" height="720" fill="#f8f9fa"/>
+  <text x="40" y="52" font-family="Yu Gothic, Meiryo, Arial, sans-serif" font-size="28" font-weight="700" fill="#212529">通所スケジュール 色分けサンプル</text>
+  <text x="40" y="84" font-family="Yu Gothic, Meiryo, Arial, sans-serif" font-size="16" fill="#495057">背景色は活動・プログラム種別、枠線色は実績ステータスを表します。</text>
+
+  <g font-family="Yu Gothic, Meiryo, Arial, sans-serif">
+    <text x="70" y="135" font-size="18" font-weight="700" fill="#343a40">月</text>
+    <text x="220" y="135" font-size="18" font-weight="700" fill="#343a40">火</text>
+    <text x="370" y="135" font-size="18" font-weight="700" fill="#343a40">水</text>
+    <text x="520" y="135" font-size="18" font-weight="700" fill="#343a40">木</text>
+    <text x="670" y="135" font-size="18" font-weight="700" fill="#343a40">金</text>
+    <text x="820" y="135" font-size="18" font-weight="700" fill="#343a40">土</text>
+    <text x="970" y="135" font-size="18" font-weight="700" fill="#343a40">日</text>
+  </g>
+
+  <g stroke="#dee2e6" fill="#ffffff">
+    <rect x="40" y="155" width="150" height="390"/>
+    <rect x="190" y="155" width="150" height="390"/>
+    <rect x="340" y="155" width="150" height="390"/>
+    <rect x="490" y="155" width="150" height="390"/>
+    <rect x="640" y="155" width="150" height="390"/>
+    <rect x="790" y="155" width="150" height="390"/>
+    <rect x="940" y="155" width="140" height="390"/>
+  </g>
+
+  <g font-family="Yu Gothic, Meiryo, Arial, sans-serif" font-size="13" font-weight="700">
+    <rect x="52" y="176" width="126" height="62" rx="7" fill="#F8CBAD" stroke="#6C757D" stroke-width="4"/>
+    <text x="64" y="198" fill="#4A2300">AM 通所 予定</text>
+    <text x="64" y="219" fill="#4A2300">自分らしく働く</text>
+
+    <rect x="202" y="176" width="126" height="62" rx="7" fill="#E2F0D9" stroke="#198754" stroke-width="4"/>
+    <text x="214" y="198" fill="#254D1B">AM 通所 通所済み</text>
+    <text x="214" y="219" fill="#254D1B">ヘルスケア</text>
+
+    <rect x="352" y="176" width="126" height="62" rx="7" fill="#DDEBF7" stroke="#FFC107" stroke-width="4"/>
+    <text x="364" y="198" fill="#1F4E79">PM 通所 遅刻</text>
+    <text x="364" y="219" fill="#1F4E79">就職活動</text>
+
+    <rect x="502" y="176" width="126" height="62" rx="7" fill="#F4CCCC" stroke="#DC3545" stroke-width="4"/>
+    <text x="514" y="198" fill="#7F1D1D">PM 通所 欠席</text>
+    <text x="514" y="219" fill="#7F1D1D">応募・面接</text>
+
+    <rect x="652" y="176" width="126" height="62" rx="7" fill="#FFFFFF" stroke="#6C757D" stroke-width="4"/>
+    <text x="664" y="198" fill="#343A40">AM 通所 予定</text>
+    <text x="664" y="219" fill="#343A40">その他</text>
+
+    <rect x="52" y="274" width="126" height="62" rx="7" fill="#DDEFEF" stroke="#198754" stroke-width="4"/>
+    <text x="64" y="296" fill="#134F4F">AM 在宅 通所済み</text>
+    <text x="64" y="317" fill="#134F4F">在宅予定</text>
+
+    <rect x="202" y="274" width="126" height="62" rx="7" fill="#F4E5F8" stroke="#198754" stroke-width="4"/>
+    <text x="214" y="296" fill="#4A235A">PM 通所 通所済み</text>
+    <text x="214" y="317" fill="#4A235A">個別訓練</text>
+
+    <rect x="352" y="274" width="126" height="62" rx="7" fill="#D8EAF7" stroke="#6C757D" stroke-width="4"/>
+    <text x="364" y="296" fill="#1B4F72">AM 通所 予定</text>
+    <text x="364" y="317" fill="#1B4F72">部署活動</text>
+
+    <rect x="502" y="274" width="126" height="62" rx="7" fill="#D9EAD3" stroke="#FD7E14" stroke-width="4"/>
+    <text x="514" y="296" fill="#274E13">PM 通所 早退</text>
+    <text x="514" y="317" fill="#274E13">外出</text>
+
+    <rect x="652" y="274" width="126" height="62" rx="7" fill="#E7E6E6" stroke="#6C757D" stroke-width="4"/>
+    <text x="664" y="296" fill="#3C3C3C">終日 通所 予定</text>
+    <text x="664" y="317" fill="#3C3C3C">その他活動</text>
+  </g>
+
+  <g font-family="Yu Gothic, Meiryo, Arial, sans-serif">
+    <text x="40" y="595" font-size="18" font-weight="700" fill="#343a40">枠線色（実績ステータス）</text>
+    <rect x="42" y="615" width="20" height="20" fill="#6C757D"/><text x="70" y="631" font-size="15" fill="#343a40">予定</text>
+    <rect x="142" y="615" width="20" height="20" fill="#198754"/><text x="170" y="631" font-size="15" fill="#343a40">通所済み</text>
+    <rect x="272" y="615" width="20" height="20" fill="#DC3545"/><text x="300" y="631" font-size="15" fill="#343a40">欠席</text>
+    <rect x="372" y="615" width="20" height="20" fill="#FFC107"/><text x="400" y="631" font-size="15" fill="#343a40">遅刻</text>
+    <rect x="472" y="615" width="20" height="20" fill="#FD7E14"/><text x="500" y="631" font-size="15" fill="#343a40">早退</text>
+  </g>
+</svg>
