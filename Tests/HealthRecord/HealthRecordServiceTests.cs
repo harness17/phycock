@@ -111,7 +111,9 @@ namespace Tests.HealthRecord
             var item = Assert.Single(result);
             Assert.Equal("10", item.Id);
             Assert.Equal("2026-05-03", item.Start);
-            Assert.Equal("起床時 体調:やや悪い 気分:やや良い", item.Title);
+            Assert.Equal("起床時 体調:やや悪い", item.Title);
+            Assert.Equal("起床時 体調:やや悪い", item.ExtendedProps.PrimaryText);
+            Assert.Equal("気分:やや良い", item.ExtendedProps.SecondaryText);
             Assert.True(item.AllDay);
             Assert.Equal("#fd7e14", item.Color);
         }

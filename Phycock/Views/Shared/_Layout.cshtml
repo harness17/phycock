@@ -7,6 +7,8 @@
     @* ポイント: CSRF トークンを meta タグに埋め込み、Ajax POST 時に X-CSRF-TOKEN ヘッダーで送信する *@
     <meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
     <title>@ViewData["Title"] - Phycock</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/images/phycock-mark.png" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -15,7 +17,10 @@
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-controller="Home" asp-action="Index">Phycock</a>
+                <a class="navbar-brand d-inline-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
+                    <img class="navbar-brand-logo" src="~/images/phycock-mark.png" asp-append-version="true" alt="" width="32" height="32" />
+                    <span>Phycock</span>
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                         aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>

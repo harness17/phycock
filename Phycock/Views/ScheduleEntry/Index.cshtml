@@ -7,7 +7,7 @@
     <button type="button" id="createButton" class="btn btn-primary"><i class="fas fa-plus me-1"></i>追加</button>
 </div>
 
-<div id="calendar"></div>
+<div id="calendar" class="record-calendar record-calendar--schedule"></div>
 
 <div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -31,7 +31,9 @@
 
         function loadForm(url) {
             $('#entryModalContent').load(url, function () {
-                updateProgramTypeVisibility($('#entryModalContent').find('.schedule-entry-form'));
+                const $form = $('#entryModalContent').find('.schedule-entry-form');
+                updateProgramTypeVisibility($form);
+                window.PhycockTimeInput?.init($form[0]);
                 entryModal.show();
             });
         }
@@ -71,7 +73,9 @@
                         return;
                     }
                     $('#entryModalContent').html(response);
-                    updateProgramTypeVisibility($('#entryModalContent').find('.schedule-entry-form'));
+                    const $form = $('#entryModalContent').find('.schedule-entry-form');
+                    updateProgramTypeVisibility($form);
+                    window.PhycockTimeInput?.init($form[0]);
                 }
             });
         }
@@ -96,47 +100,13 @@
                 height: 'auto',
                 selectable: true,
                 eventDisplay: 'block',
+                dayMaxEvents: false,
                 events: scheduleEntryUrls.events,
-                eventContent: function (info) {
-                    const session = info.event.extendedProps.session || '';
-                    const activityNote = info.event.extendedProps.activityNote || '';
-                    const timeAndPlace = info.event.extendedProps.isAtHome
-                        ? `${info.timeText} 在宅`.trim()
-                        : info.timeText;
-                    const textColor = info.event.textColor || '#212529';
-                    const container = document.createElement('div');
-                    container.style.padding = '1px 3px';
-                    container.style.fontSize = '0.8em';
-                    container.style.lineHeight = '1.3';
-                    container.style.color = textColor;
-                    const sessionEl = document.createElement('div');
-                    sessionEl.style.fontWeight = 'bold';
-                    sessionEl.textContent = timeAndPlace
-                        ? `${session} ${timeAndPlace}`
-                        : session;
-                    container.appendChild(sessionEl);
-                    if (activityNote) {
-                        const noteEl = document.createElement('div');
-                        noteEl.style.whiteSpace = 'pre-line';
-                        noteEl.textContent = activityNote;
-                        container.appendChild(noteEl);
-                    }
-                    return { domNodes: [container] };
-                },
+                eventContent: PhycockCalendar.renderRecordEvent,
                 eventDidMount: function (info) {
-                    if (info.event.backgroundColor) {
-                        info.el.style.backgroundColor = info.event.backgroundColor;
-                    }
-                    if (info.event.borderColor) {
-                        info.el.style.borderColor = info.event.borderColor;
-                    }
-                    if (info.event.textColor) {
-                        info.el.style.color = info.event.textColor;
-                        const main = info.el.querySelector('.fc-event-main');
-                        if (main) {
-                            main.style.color = info.event.textColor;
-                        }
-                    }
+                    PhycockCalendar.applyEventColors(info);
+                    const status = info.event.extendedProps.status || '';
+                    info.el.setAttribute('title', status ? `${info.event.title} / ${status}` : info.event.title);
                 },
                 dateClick: function (info) {
                     loadForm(scheduleEntryUrls.createPartial + '?date=' + encodeURIComponent(info.dateStr));

@@ -29,11 +29,11 @@
     </div>
     <div class="col-md-6">
         <label asp-for="StartTime" class="form-label"></label>
-        <input asp-for="StartTime" type="time" class="form-control" />
+        <input asp-for="StartTime" type="time" class="form-control time-focus-input" step="60" data-next-time-input="#EndTime" />
     </div>
     <div class="col-md-6">
         <label asp-for="EndTime" class="form-label"></label>
-        <input asp-for="EndTime" type="time" class="form-control" />
+        <input asp-for="EndTime" type="time" class="form-control time-focus-input" step="60" />
         <span asp-validation-for="EndTime" class="text-danger"></span>
     </div>
     <div class="col-12">

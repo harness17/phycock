@@ -94,7 +94,7 @@ namespace Phycock.Models
     /// <summary>
     /// FullCalendar 用の通所予定追加属性。
     /// </summary>
-    public class ScheduleEntryExtendedProps
+    public class ScheduleEntryExtendedProps : CalendarEventExtendedProps
     {
         /// <summary>時間帯（AM/PM/終日）。</summary>
         public string Session { get; set; } = "";

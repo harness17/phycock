@@ -98,5 +98,17 @@ namespace Phycock.Models
 
         /// <summary>表示色。</summary>
         public string Color { get; set; } = "";
+
+        /// <summary>背景色。</summary>
+        public string BackgroundColor { get; set; } = "";
+
+        /// <summary>枠線色。</summary>
+        public string BorderColor { get; set; } = "";
+
+        /// <summary>文字色。</summary>
+        public string TextColor { get; set; } = "";
+
+        /// <summary>追加属性。</summary>
+        public CalendarEventExtendedProps ExtendedProps { get; set; } = new();
     }
 }

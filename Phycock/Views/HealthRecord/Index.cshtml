@@ -79,6 +79,9 @@
                     list: '一覧'
                 },
                 events: healthRecordUrls.events,
+                eventDisplay: 'block',
+                eventContent: PhycockCalendar.renderRecordEvent,
+                eventDidMount: PhycockCalendar.applyEventColors,
                 dateClick: function (info) {
                     window.location.href = healthRecordUrls.create + '?recordDate=' + encodeURIComponent(info.dateStr);
                 },

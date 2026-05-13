@@ -152,6 +152,9 @@ namespace Phycock.Service
             var start = CombineDateAndTime(entity.Date, entity.StartTime);
             var end = CombineDateAndTime(entity.Date, entity.EndTime);
             var color = GetColor(entity.ActivityType, entity.ProgramType, entity.IsAtHome);
+            var borderColor = GetStatusBorderColor(entity.Status);
+            var timeRange = BuildTimeRange(entity.StartTime, entity.EndTime);
+            var place = entity.IsAtHome ? "在宅" : "通所";
 
             return new ScheduleEntryJsonDto
             {
@@ -161,10 +164,13 @@ namespace Phycock.Service
                 End = end?.ToString("yyyy-MM-ddTHH:mm:ss"),
                 Color = color.BackgroundColor,
                 BackgroundColor = color.BackgroundColor,
-                BorderColor = color.BorderColor,
+                BorderColor = borderColor,
                 TextColor = color.TextColor,
                 ExtendedProps = new ScheduleEntryExtendedProps
                 {
+                    PrimaryText = $"{GetSessionShortLabel(entity.Session)} {entity.ActivityType.GetDisplayName()}",
+                    SecondaryText = string.Join(" / ", new[] { timeRange, place, entity.Status.GetDisplayName() }.Where(x => !string.IsNullOrWhiteSpace(x))),
+                    NoteText = entity.ActivityNote,
                     Session = GetSessionShortLabel(entity.Session),
                     IsAtHome = entity.IsAtHome,
                     Status = entity.Status.GetDisplayName(),
@@ -241,6 +247,27 @@ namespace Phycock.Service
                 ProgramType.OtherFreeInput => new("#FFFFFF", "#ADB5BD", "#343A40"),
                 _ => new("#E7E6E6", "#A6A6A6", "#3C3C3C"),
             };
+        }
+
+        private static string GetStatusBorderColor(ScheduleStatus status)
+        {
+            return status switch
+            {
+                ScheduleStatus.Planned => "#6C757D",
+                ScheduleStatus.Attended => "#198754",
+                ScheduleStatus.Absent => "#DC3545",
+                ScheduleStatus.Late => "#FFC107",
+                ScheduleStatus.EarlyLeave => "#FD7E14",
+                _ => "#6C757D",
+            };
+        }
+
+        private static string BuildTimeRange(TimeOnly? startTime, TimeOnly? endTime)
+        {
+            if (!startTime.HasValue && !endTime.HasValue) return "";
+            if (!endTime.HasValue) return $"{startTime:HH:mm}-";
+            if (!startTime.HasValue) return $"-{endTime:HH:mm}";
+            return $"{startTime:HH:mm}-{endTime:HH:mm}";
         }
 
         private sealed record ScheduleEntryColor(string BackgroundColor, string BorderColor, string TextColor);

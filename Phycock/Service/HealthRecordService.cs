@@ -212,12 +212,25 @@ namespace Phycock.Service
 
         private static HealthRecordCalendarEventDto ToCalendarEventDto(HealthRecordEntity entity)
         {
+            var color = GetConditionColor(entity.Condition);
+            var primaryText = $"{entity.RecordTiming.GetDisplayName()} 体調:{entity.Condition.GetDisplayName()}";
+            var symptoms = string.Join("、", FromFlags(entity.SymptomFlags).Select(x => x.GetDisplayName()));
+
             return new HealthRecordCalendarEventDto
             {
                 Id = entity.Id.ToString(),
-                Title = $"{entity.RecordTiming.GetDisplayName()} 体調:{entity.Condition.GetDisplayName()} 気分:{entity.Feeling.GetDisplayName()}",
+                Title = primaryText,
                 Start = entity.RecordDate.ToString("yyyy-MM-dd"),
-                Color = GetConditionColor(entity.Condition),
+                Color = color,
+                BackgroundColor = color,
+                BorderColor = GetConditionBorderColor(entity.Condition),
+                TextColor = "#FFFFFF",
+                ExtendedProps = new CalendarEventExtendedProps
+                {
+                    PrimaryText = primaryText,
+                    SecondaryText = $"気分:{entity.Feeling.GetDisplayName()}",
+                    NoteText = string.IsNullOrWhiteSpace(symptoms) ? null : symptoms,
+                },
             };
         }
 
@@ -231,6 +244,19 @@ namespace Phycock.Service
                 ConditionLevel.Bad => "#fd7e14",
                 ConditionLevel.VeryBad => "#dc3545",
                 _ => "#6c757d",
+            };
+        }
+
+        private static string GetConditionBorderColor(ConditionLevel condition)
+        {
+            return condition switch
+            {
+                ConditionLevel.VeryGood => "#0F5132",
+                ConditionLevel.Good => "#087990",
+                ConditionLevel.Normal => "#084298",
+                ConditionLevel.Bad => "#984C0C",
+                ConditionLevel.VeryBad => "#842029",
+                _ => "#495057",
             };
         }
 

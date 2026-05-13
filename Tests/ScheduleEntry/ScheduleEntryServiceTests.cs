@@ -71,9 +71,12 @@ namespace Tests.ScheduleEntry
 
             var item = Assert.Single(result);
             Assert.Equal("#F4CCCC", item.BackgroundColor);
-            Assert.Equal("#C00000", item.BorderColor);
+            Assert.Equal("#6C757D", item.BorderColor);
             Assert.Equal("#7F1D1D", item.TextColor);
             Assert.Equal(item.BackgroundColor, item.Color);
+            Assert.Equal("AM プログラム", item.ExtendedProps.PrimaryText);
+            Assert.Equal("通所 / 予定", item.ExtendedProps.SecondaryText);
+            Assert.Equal("応募書類", item.ExtendedProps.NoteText);
         }
 
         [Fact]
@@ -98,7 +101,7 @@ namespace Tests.ScheduleEntry
 
             var item = Assert.Single(result);
             Assert.Equal("#F4E5F8", item.BackgroundColor);
-            Assert.Equal("#8E44AD", item.BorderColor);
+            Assert.Equal("#6C757D", item.BorderColor);
             Assert.Equal("#4A235A", item.TextColor);
         }
 
@@ -127,7 +130,7 @@ namespace Tests.ScheduleEntry
             var item = Assert.Single(result);
             Assert.True(item.ExtendedProps.IsAtHome);
             Assert.Equal("#DDEFEF", item.BackgroundColor);
-            Assert.Equal("#2C9A9A", item.BorderColor);
+            Assert.Equal("#6C757D", item.BorderColor);
             Assert.Equal("#134F4F", item.TextColor);
         }
 
@@ -154,7 +157,7 @@ namespace Tests.ScheduleEntry
 
             var item = Assert.Single(result);
             Assert.Equal("#FFFFFF", item.BackgroundColor);
-            Assert.Equal("#ADB5BD", item.BorderColor);
+            Assert.Equal("#6C757D", item.BorderColor);
             Assert.Equal("#343A40", item.TextColor);
         }
     }

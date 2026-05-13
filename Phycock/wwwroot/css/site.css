@@ -17,6 +17,13 @@ a.navbar-brand {
   word-break: break-all;
 }
 
+.navbar-brand-logo {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.25rem;
+  object-fit: contain;
+}
+
 /* ===== レスポンシブフォントサイズ ===== */
 html {
   font-size: 14px;
@@ -64,6 +71,7 @@ html {
 .record-calendar .fc-daygrid-event {
   align-items: flex-start;
   border-radius: 0.25rem;
+  border-width: 2px;
   margin-top: 0.18rem;
   padding: 0.1rem 0.25rem;
   white-space: normal;
@@ -77,6 +85,28 @@ html {
 
 .record-calendar .fc-event-title {
   line-height: 1.25;
+}
+
+.record-calendar-event {
+  display: grid;
+  gap: 0.08rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  padding: 0.05rem 0.1rem;
+}
+
+.record-calendar-event__title {
+  font-weight: 700;
+}
+
+.record-calendar-event__meta {
+  font-size: 0.86em;
+  opacity: 0.86;
+}
+
+.record-calendar-event__note {
+  font-size: 0.86em;
+  white-space: pre-line;
 }
 
 @media (max-width: 767.98px) {

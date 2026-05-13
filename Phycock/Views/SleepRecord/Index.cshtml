@@ -39,6 +39,9 @@
                     list: '一覧'
                 },
                 events: sleepRecordUrls.events,
+                eventDisplay: 'block',
+                eventContent: PhycockCalendar.renderRecordEvent,
+                eventDidMount: PhycockCalendar.applyEventColors,
                 dateClick: function (info) {
                     window.location.href = sleepRecordUrls.create + '?recordDate=' + encodeURIComponent(info.dateStr);
                 },

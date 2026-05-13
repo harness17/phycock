@@ -147,18 +147,45 @@ namespace Phycock.Service
         private static SleepRecordCalendarEventDto ToCalendarEventDto(SleepRecordEntity entity)
         {
             var duration = entity.EndDate.HasValue && entity.EndDate.Value > entity.StartDate
-                ? $" {entity.EndDate.Value.Subtract(entity.StartDate).TotalHours:0.0}h"
+                ? $"{entity.EndDate.Value.Subtract(entity.StartDate).TotalHours:0.0}h"
                 : "";
+            var color = GetSleepTypeColor(entity.SleepType);
+            var timeRange = entity.EndDate.HasValue
+                ? $"{entity.StartDate:HH:mm}-{entity.EndDate.Value:HH:mm}"
+                : $"{entity.StartDate:HH:mm}-";
 
             return new SleepRecordCalendarEventDto
             {
                 Id = entity.Id.ToString(),
-                Title = $"{entity.SleepType.GetDisplayName()}{duration}",
+                Title = entity.SleepType.GetDisplayName(),
                 Start = entity.StartDate.ToString("s"),
                 End = entity.EndDate?.ToString("s"),
-                Color = entity.SleepType == SleepType.DaytimeNap ? "#20c997" : "#6610f2",
+                Color = color.BackgroundColor,
+                BackgroundColor = color.BackgroundColor,
+                BorderColor = color.BorderColor,
+                TextColor = color.TextColor,
+                ExtendedProps = new CalendarEventExtendedProps
+                {
+                    PrimaryText = entity.SleepType.GetDisplayName(),
+                    SecondaryText = string.IsNullOrWhiteSpace(duration) ? timeRange : $"{timeRange} {duration}",
+                    NoteText = entity.Memo,
+                },
             };
         }
+
+        private static SleepRecordColor GetSleepTypeColor(SleepType sleepType)
+        {
+            return sleepType switch
+            {
+                SleepType.NightSleep => new("#E9D8FD", "#6F42C1", "#31135E"),
+                SleepType.DaytimeNap => new("#D2F4EA", "#20C997", "#0B4F3A"),
+                SleepType.MedicalFacilityRest => new("#D1ECF1", "#0DCAF0", "#055160"),
+                SleepType.Other => new("#E9ECEF", "#6C757D", "#343A40"),
+                _ => new("#E9ECEF", "#6C757D", "#343A40"),
+            };
+        }
+
+        private sealed record SleepRecordColor(string BackgroundColor, string BorderColor, string TextColor);
 
         private static SleepRecordFormViewModel ToFormViewModel(SleepRecordEntity entity)
         {

@@ -72,10 +72,14 @@ namespace Tests.SleepRecord
 
             var item = Assert.Single(result);
             Assert.Equal("20", item.Id);
-            Assert.Equal("本睡眠 8.0h", item.Title);
+            Assert.Equal("本睡眠", item.Title);
             Assert.Equal("2026-05-03T22:00:00", item.Start);
             Assert.Equal("2026-05-04T06:00:00", item.End);
-            Assert.Equal("#6610f2", item.Color);
+            Assert.Equal("#E9D8FD", item.Color);
+            Assert.Equal("#6F42C1", item.BorderColor);
+            Assert.Equal("#31135E", item.TextColor);
+            Assert.Equal("本睡眠", item.ExtendedProps.PrimaryText);
+            Assert.Equal("22:00-06:00 8.0h", item.ExtendedProps.SecondaryText);
         }
 
         [Fact]
