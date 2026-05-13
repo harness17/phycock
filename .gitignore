@@ -52,3 +52,6 @@ tmp/
 
 # Browser verification screenshots
 /*.png
+
+# Generated PDF artifacts
+docs/*.pdf
