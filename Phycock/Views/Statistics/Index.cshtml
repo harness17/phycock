@@ -13,12 +13,12 @@
 
 @if (!isPrint)
 {
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+<div class="statistics-toolbar d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h1 class="h3 mb-0">統計</h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 align-items-center">
         <input id="weekStart" type="date" class="form-control" />
-        <button id="reloadStats" type="button" class="btn btn-outline-primary">更新</button>
-        <button id="exportPdf" type="button" class="btn btn-outline-secondary">
+        <button id="reloadStats" type="button" class="btn btn-outline-primary text-nowrap">更新</button>
+        <button id="exportPdf" type="button" class="btn btn-outline-secondary text-nowrap">
             <i class="fa-regular fa-file-pdf"></i> PDF出力
         </button>
     </div>
@@ -95,7 +95,12 @@
                                 <td>@(d.FeelingAvg?.ToString("0.0") ?? "-")</td>
                                 <td>@(d.NightSleepHours > 0 ? $"{d.NightSleepHours:0.0}h" : "-")</td>
                                 <td>@(d.OtherSleepHours > 0 ? $"{d.OtherSleepHours:0.0}h" : "-")</td>
-                                <td>@d.ScheduleSummary</td>
+                                <td>
+                                    @foreach (var line in d.ScheduleSummaryLines)
+                                    {
+                                        <div>@line</div>
+                                    }
+                                </td>
                                 <td>
                                     @if (d.HealthRecords.Count == 0)
                                     {
@@ -156,28 +161,6 @@
                 <span class="legend-item text-muted">※ 早退時は予定時間を短縮表示</span>
             </div>
         </section>
-
-        @if (!isPrint)
-        {
-        <div class="row">
-            <div class="col-lg-6 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">体調・気分</h5>
-                        <canvas id="weeklyHealthChart" height="160"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">睡眠時間</h5>
-                        <canvas id="weeklySleepChart" height="160"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        }
     </div>
     @if (!isPrint)
     {
@@ -200,13 +183,9 @@
         // サーバー側（DBデータ）から注入するチャート用データ
         const reportChartData = @Html.Raw(Json.Serialize(report.ReportChart));
         const timelineChartData = @Html.Raw(Json.Serialize(report.TimelineChart));
-        let weeklyHealthChart;
-        let weeklySleepChart;
         let monthlyHealthChart;
         let weeklyReportSampleChart;
         const statisticsUrls = {
-            healthWeekly: '@Url.Action("GetHealthWeekly", "Statistics")',
-            sleepWeekly: '@Url.Action("GetSleepWeekly", "Statistics")',
             healthMonthly: '@Url.Action("GetHealthMonthly", "Statistics")'
         };
 
@@ -224,19 +203,6 @@
                 return chart;
             }
             return new Chart(document.getElementById(canvasId), { type: 'line', data: data });
-        }
-
-        function createOrUpdateBarChart(chart, canvasId, labels, sleepHoursData) {
-            const data = {
-                labels: labels,
-                datasets: [{ label: '睡眠時間', data: sleepHoursData, backgroundColor: '#6f42c1' }]
-            };
-            if (chart) {
-                chart.data = data;
-                chart.update();
-                return chart;
-            }
-            return new Chart(document.getElementById(canvasId), { type: 'bar', data: data });
         }
 
         const sleepTargetBandPlugin = {
@@ -382,21 +348,6 @@
         function loadStats() {
             const weekStart = $('#weekStart').val();
             const date = new Date(weekStart + 'T00:00:00');
-            $.get(statisticsUrls.healthWeekly, { weekStart: weekStart }, function (data) {
-                weeklyHealthChart = createOrUpdateLineChart(
-                    weeklyHealthChart,
-                    'weeklyHealthChart',
-                    data.labels,
-                    data.conditionData,
-                    data.feelingData);
-            });
-            $.get(statisticsUrls.sleepWeekly, { weekStart: weekStart }, function (data) {
-                weeklySleepChart = createOrUpdateBarChart(
-                    weeklySleepChart,
-                    'weeklySleepChart',
-                    data.labels,
-                    data.sleepHoursData);
-            });
             $.get(statisticsUrls.healthMonthly, { year: date.getFullYear(), month: date.getMonth() + 1 }, function (data) {
                 monthlyHealthChart = createOrUpdateLineChart(
                     monthlyHealthChart,
@@ -626,6 +577,16 @@
         flex: 0 0 auto;
     }
 
+    /* 最上部ツールバー：日付入力・ボタンが折り返さないよう固定幅 */
+    .statistics-toolbar .form-control[type="date"] {
+        width: auto;
+        flex: 0 0 auto;
+    }
+
+    .statistics-toolbar .btn {
+        flex: 0 0 auto;
+    }
+
     .weekly-schedule-strip {
         display: grid;
         grid-template-columns: repeat(7, minmax(96px, 1fr));
@@ -642,7 +603,11 @@
         display: flex;
         flex-direction: column;
         gap: 0.35rem;
-        white-space: nowrap;
+        /* 文字数が多くてもセル内で折り返す（はみ出し防止） */
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        min-width: 0;
     }
 
     .schedule-date {
@@ -668,6 +633,8 @@
     .schedule-entry small {
         color: #495057;
         font-size: 0.74rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .schedule-entry.status-attended {

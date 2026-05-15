@@ -48,7 +48,7 @@ namespace Phycock.Models
         public double? FeelingAvg { get; set; }
         public double NightSleepHours { get; set; }
         public double OtherSleepHours { get; set; }
-        public string ScheduleSummary { get; set; } = "";  // テーブル「通所」列
+        public List<string> ScheduleSummaryLines { get; set; } = new();  // テーブル「通所」列（AM/PM/終日ごとに1行）
         public string ScheduleDayClass { get; set; } = "rest";  // planned/remote/rest
         public List<ScheduleStripItemDto> ScheduleStrip { get; set; } = new();
         public List<HealthRecordItemDto> HealthRecords { get; set; } = new();

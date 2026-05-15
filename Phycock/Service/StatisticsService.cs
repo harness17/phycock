@@ -222,7 +222,7 @@ namespace Phycock.Service
         {
             if (daySchedule.Count == 0)
             {
-                dto.ScheduleSummary = "予定なし";
+                dto.ScheduleSummaryLines.Add("予定なし");
                 dto.ScheduleDayClass = "rest";
                 dto.ScheduleStrip.Add(new ScheduleStripItemDto
                 {
@@ -270,7 +270,7 @@ namespace Phycock.Service
                 });
             }
 
-            dto.ScheduleSummary = string.Join(" / ", summaryParts);
+            dto.ScheduleSummaryLines = summaryParts;
         }
 
         private static string MapStatusClass(ScheduleStatus status) => status switch
