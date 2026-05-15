@@ -103,6 +103,10 @@ builder.Services.AddScoped<Phycock.Service.ScheduleEntryService>();
 builder.Services.AddScoped<Phycock.Service.DashboardService>();
 builder.Services.AddScoped<Phycock.Service.StatisticsService>();
 
+// PDF出力（IPlaywright は Singleton で使い回し、Browser は per-request）
+builder.Services.AddSingleton<Phycock.Service.IPlaywrightFactory, Phycock.Service.PlaywrightFactory>();
+builder.Services.AddScoped<Phycock.Service.PdfExportService>();
+
 // AutoMapper
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies()));
 

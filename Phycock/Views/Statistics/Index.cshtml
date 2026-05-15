@@ -1,14 +1,22 @@
 @{
     ViewData["Title"] = "統計";
+    var isPrint = Context.Request.Query["print"] == "1";
+    if (isPrint)
+    {
+        ViewData["Print"] = true;
+    }
+    var weekStartParam = Context.Request.Query["weekStart"].ToString();
 }
 
+@if (!isPrint)
+{
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h1 class="h3 mb-0">統計</h1>
     <div class="d-flex gap-2">
         <input id="weekStart" type="date" class="form-control" />
         <button id="reloadStats" type="button" class="btn btn-outline-primary">更新</button>
-        <button id="exportSamplePdf" type="button" class="btn btn-outline-secondary">
-            <i class="fa-regular fa-file-pdf"></i> PDF出力（サンプル）
+        <button id="exportPdf" type="button" class="btn btn-outline-secondary">
+            <i class="fa-regular fa-file-pdf"></i> PDF出力
         </button>
     </div>
 </div>
@@ -21,9 +29,10 @@
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">月次</button>
     </li>
 </ul>
+}
 
 <div class="tab-content">
-    <div class="tab-pane fade show active" id="weekly" role="tabpanel">
+    <div class="@(isPrint ? "" : "tab-pane fade show active")" id="weekly" role="tabpanel">
         <section class="weekly-report-sample mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
@@ -251,6 +260,8 @@
             </div>
         </section>
 
+        @if (!isPrint)
+        {
         <div class="row">
             <div class="col-lg-6 mb-3">
                 <div class="card">
@@ -269,7 +280,10 @@
                 </div>
             </div>
         </div>
+        }
     </div>
+    @if (!isPrint)
+    {
     <div class="tab-pane fade" id="monthly" role="tabpanel">
         <div class="card">
             <div class="card-body">
@@ -278,11 +292,14 @@
             </div>
         </div>
     </div>
+    }
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
+        const isPrintMode = @(isPrint ? "true" : "false");
+        const printWeekStart = '@weekStartParam';
         let weeklyHealthChart;
         let weeklySleepChart;
         let monthlyHealthChart;
@@ -409,6 +426,7 @@
             };
             const options = {
                 responsive: true,
+                animation: isPrintMode ? false : undefined,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { position: 'bottom' },
@@ -628,6 +646,7 @@
 
             const options = {
                 responsive: true,
+                animation: isPrintMode ? false : undefined,
                 indexAxis: 'y',
                 interaction: { mode: 'nearest', intersect: true },
                 plugins: {
@@ -697,13 +716,27 @@
         const today = new Date();
         const weekStart = new Date(today);
         weekStart.setDate(today.getDate() - today.getDay());
-        $('#weekStart').val(toDateInputValue(weekStart));
-        $('#reloadStats').on('click', loadStats);
-        createWeeklyReportSampleChart();
-        createWeeklyTimelineSampleChart();
-        loadStats();
+
+        if (isPrintMode) {
+            // ポイント: print=1 のときはサーバー側 Playwright が描画完了を window.chartsReady で検知する
+            createWeeklyReportSampleChart();
+            createWeeklyTimelineSampleChart();
+            // requestAnimationFrame 2回でレイアウト確定 → chartsReady を立てる
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                window.chartsReady = true;
+            }));
+        } else {
+            $('#weekStart').val(printWeekStart || toDateInputValue(weekStart));
+            $('#reloadStats').on('click', loadStats);
+            $('#exportPdf').on('click', function () {
+                const ws = $('#weekStart').val();
+                window.location.href = '@Url.Action("ExportPdf", "Statistics")' + '?weekStart=' + encodeURIComponent(ws);
+            });
+            createWeeklyReportSampleChart();
+            createWeeklyTimelineSampleChart();
+            loadStats();
+        }
     </script>
-    <script src="~/js/statistics-pdf-sample.js" asp-append-version="true"></script>
 }
 
 <style>
@@ -898,10 +931,41 @@
 
         .weekly-timeline-sample {
             page-break-inside: avoid;
+            page-break-before: always;
         }
 
         .weekly-schedule-strip {
             overflow: visible;
         }
+    }
+
+    /* print=1 モード時のレイアウト最適化 */
+    body.print-mode {
+        font-size: 11px;
+    }
+
+    body.print-mode .weekly-report-chart {
+        min-height: 0;
+    }
+
+    body.print-mode .weekly-timeline-chart {
+        min-height: 0;
+    }
+
+    body.print-mode .weekly-report-chart canvas {
+        max-height: 320px;
+    }
+
+    body.print-mode .weekly-timeline-chart canvas {
+        max-height: 380px;
+    }
+
+    body.print-mode .weekly-report-sample,
+    body.print-mode .weekly-timeline-sample {
+        page-break-inside: avoid;
+    }
+
+    body.print-mode .weekly-timeline-sample {
+        page-break-before: always;
     }
 </style>
