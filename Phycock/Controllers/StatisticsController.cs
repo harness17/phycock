@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc;
+using Phycock.Models;
 using Phycock.Service;
 using PWCookie = Microsoft.Playwright.Cookie;
 using System.Security.Claims;
@@ -38,9 +39,30 @@ namespace Phycock.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index(DateTime? weekStart)
         {
-            return View();
+            try
+            {
+                var ws = NormalizeWeekStart(weekStart);
+                var userId = await ResolveTargetUserIdAsync();
+                var vm = new StatisticsViewModel
+                {
+                    WeeklyReport = _service.GetWeeklyReport(userId, ws)
+                };
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(new LogModel($"統計ページ表示中にエラー。weekStart={weekStart:O}"), ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, DatabaseErrorMessage);
+            }
+        }
+
+        /// <summary>weekStart を直近の日曜日 00:00 に正規化する。null/不正値は今週の日曜。</summary>
+        private static DateTime NormalizeWeekStart(DateTime? weekStart)
+        {
+            var d = (weekStart ?? DateTime.Today).Date;
+            return d.AddDays(-(int)d.DayOfWeek);
         }
 
         [HttpGet]
@@ -97,7 +119,7 @@ namespace Phycock.Controllers
         {
             try
             {
-                var ws = (weekStart ?? DateTime.Today).ToString("yyyy-MM-dd");
+                var ws = NormalizeWeekStart(weekStart).ToString("yyyy-MM-dd");
 
                 // ループバック用の内部URL（IServerAddressesFeature から取得し、ハードコードを避ける）
                 var addresses = _server.Features.Get<IServerAddressesFeature>()?.Addresses;

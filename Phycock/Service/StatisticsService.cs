@@ -1,3 +1,6 @@
+using Phycock.Common;
+using Phycock.Entity;
+using Phycock.Entity.Enums;
 using Phycock.Models;
 using Phycock.Repository;
 
@@ -10,16 +13,19 @@ namespace Phycock.Service
     {
         private readonly HealthRecordRepository _healthRecordRepository;
         private readonly SleepRecordRepository _sleepRecordRepository;
+        private readonly ScheduleEntryRepository _scheduleEntryRepository;
 
         /// <summary>
         /// 統計サービスを初期化する。
         /// </summary>
         public StatisticsService(
             HealthRecordRepository healthRecordRepository,
-            SleepRecordRepository sleepRecordRepository)
+            SleepRecordRepository sleepRecordRepository,
+            ScheduleEntryRepository scheduleEntryRepository)
         {
             _healthRecordRepository = healthRecordRepository;
             _sleepRecordRepository = sleepRecordRepository;
+            _scheduleEntryRepository = scheduleEntryRepository;
         }
 
         /// <summary>週次体調統計を取得する。</summary>
@@ -80,6 +86,313 @@ namespace Phycock.Service
             }
 
             return result;
+        }
+
+        // ───────────────────────────────────────────────────────────
+        // 週次レポート（DB データから生成、画面・PDF 共用）
+        // ───────────────────────────────────────────────────────────
+
+        private static readonly string[] DayOfWeekShort = { "日", "月", "火", "水", "木", "金", "土" };
+
+        /// <summary>
+        /// 週次レポートを取得する。1週間（日曜開始）のデータを集計し、
+        /// テーブル表示・スケジュールストリップ・チャート描画用データを一括で構築する。
+        /// </summary>
+        public WeeklyReportDto GetWeeklyReport(string userId, DateTime weekStart)
+        {
+            var start = weekStart.Date;
+            var end = start.AddDays(6);
+            var endDateOnly = DateOnly.FromDateTime(end);
+            var startDateOnly = DateOnly.FromDateTime(start);
+
+            // 日跨ぎ睡眠を捕捉するため前日からも引く
+            var sleepStart = start.AddDays(-1);
+            var healthRecords = _healthRecordRepository.GetByUserAndRange(userId, start, end);
+            var sleepRecords = _sleepRecordRepository.GetByUserAndRange(userId, sleepStart, end);
+            var scheduleEntries = _scheduleEntryRepository.GetByUserAndRange(userId, startDateOnly, endDateOnly);
+
+            var report = new WeeklyReportDto { WeekStart = start };
+            for (var day = start; day <= end; day = day.AddDays(1))
+            {
+                var daily = BuildDailyReport(day, healthRecords, sleepRecords, scheduleEntries);
+                report.Days.Add(daily);
+            }
+
+            BuildReportChart(report);
+            BuildTimelineChart(report, sleepRecords, scheduleEntries);
+            return report;
+        }
+
+        private static DailyReportDto BuildDailyReport(
+            DateTime day,
+            List<HealthRecordEntity> allHealth,
+            List<SleepRecordEntity> allSleep,
+            List<ScheduleEntryEntity> allSchedule)
+        {
+            var dayDate = DateOnly.FromDateTime(day);
+            var dailyHealth = allHealth.Where(x => x.RecordDate.Date == day)
+                                       .OrderBy(x => x.RecordTiming)
+                                       .ThenBy(x => x.CreateDate)
+                                       .ToList();
+            var dailySchedule = allSchedule.Where(x => x.Date == dayDate)
+                                           .OrderBy(x => x.Session)
+                                           .ToList();
+
+            // 睡眠記録：当日 RecordDate のもの + 前日に始まり当日に終わるもの
+            var dailySleep = allSleep
+                .Where(x => x.RecordDate.Date == day
+                            || (x.EndDate.HasValue && x.StartDate.Date < day && x.EndDate.Value.Date >= day))
+                .OrderBy(x => x.SleepType)
+                .ThenBy(x => x.StartDate)
+                .ToList();
+
+            // 体調・気分平均
+            double? conditionAvg = dailyHealth.Count == 0 ? null
+                : Math.Round(dailyHealth.Average(x => (int)x.Condition), 2);
+            double? feelingAvg = dailyHealth.Count == 0 ? null
+                : Math.Round(dailyHealth.Average(x => (int)x.Feeling), 2);
+
+            // 睡眠時間（本睡眠 / 他睡眠）。当日に重なる時間のみ加算。
+            var dayStart = day;
+            var dayEnd = day.AddDays(1);
+            double nightHours = 0, otherHours = 0;
+            foreach (var s in dailySleep.Where(s => s.EndDate.HasValue))
+            {
+                var overlap = OverlapHours(s.StartDate, s.EndDate!.Value, dayStart, dayEnd);
+                if (overlap <= 0) continue;
+                if (s.SleepType == SleepType.NightSleep) nightHours += overlap;
+                else otherHours += overlap;
+            }
+
+            var dto = new DailyReportDto
+            {
+                Date = day,
+                DayLabel = $"{day.Month}/{day.Day} {DayOfWeekShort[(int)day.DayOfWeek]}",
+                ConditionAvg = conditionAvg,
+                FeelingAvg = feelingAvg,
+                NightSleepHours = Math.Round(nightHours, 2),
+                OtherSleepHours = Math.Round(otherHours, 2)
+            };
+
+            // スケジュールサマリ・ストリップ・日種別
+            BuildScheduleParts(dailySchedule, dto);
+
+            // 体調記録明細
+            foreach (var h in dailyHealth)
+            {
+                dto.HealthRecords.Add(new HealthRecordItemDto
+                {
+                    TimingLabel = h.RecordTiming.GetDisplayName(),
+                    ConditionLabel = ((int)h.Condition).ToString(),
+                    FeelingLabel = ((int)h.Feeling).ToString(),
+                    SymptomsLabel = FormatSymptoms(h.SymptomFlags),
+                    Memo = string.IsNullOrWhiteSpace(h.Memo) ? null : h.Memo
+                });
+            }
+
+            // 睡眠記録明細：本睡眠 → 他睡眠 の順に表示
+            foreach (var s in dailySleep.Where(s => s.EndDate.HasValue))
+            {
+                var hours = Math.Round(OverlapHours(s.StartDate, s.EndDate!.Value, dayStart, dayEnd), 2);
+                if (hours <= 0) continue;
+                dto.SleepRecords.Add(new SleepRecordItemDto
+                {
+                    TypeLabel = s.SleepType == SleepType.NightSleep ? "本睡眠" : "他睡眠",
+                    Hours = hours,
+                    Memo = string.IsNullOrWhiteSpace(s.Memo) ? null : s.Memo
+                });
+            }
+
+            return dto;
+        }
+
+        /// <summary>SymptomFlags（ビットフラグ）を「眠気、頭痛」等の文字列に整形する。</summary>
+        private static string FormatSymptoms(long flags)
+        {
+            if (flags <= 0) return "なし";
+            var names = Enum.GetValues<SymptomType>()
+                .Where(s => s != SymptomType.None && ((long)s & flags) != 0)
+                .Select(s => s.GetDisplayName())
+                .ToList();
+            return names.Count == 0 ? "なし" : string.Join("、", names);
+        }
+
+        /// <summary>スケジュールサマリ（テーブル列）・ストリップ・日種別CSSを構築する。</summary>
+        private static void BuildScheduleParts(List<ScheduleEntryEntity> daySchedule, DailyReportDto dto)
+        {
+            if (daySchedule.Count == 0)
+            {
+                dto.ScheduleSummary = "予定なし";
+                dto.ScheduleDayClass = "rest";
+                dto.ScheduleStrip.Add(new ScheduleStripItemDto
+                {
+                    SessionLabel = "予定なし",
+                    DetailLabel = "",
+                    StatusClass = "status-none"
+                });
+                return;
+            }
+
+            // 日種別: 通所が1件でも含まれれば planned、全部 AtHome なら remote
+            dto.ScheduleDayClass = daySchedule.All(x => x.IsAtHome) ? "remote" : "planned";
+
+            var summaryParts = new List<string>();
+            foreach (var entry in daySchedule)
+            {
+                var sessionPrefix = entry.Session switch
+                {
+                    ScheduleSession.AM => "AM",
+                    ScheduleSession.PM => "PM",
+                    _ => "終日"
+                };
+                var venue = entry.IsAtHome ? "在宅" : "通所";
+                var statusName = entry.Status.GetDisplayName();
+                var activityName = entry.ActivityType == ActivityType.Program && entry.ProgramType.HasValue
+                    ? entry.ProgramType.Value.GetDisplayName()
+                    : entry.ActivityType.GetDisplayName();
+
+                // テーブル「通所」列のサマリ
+                if (entry.Status == ScheduleStatus.Planned)
+                {
+                    summaryParts.Add($"{sessionPrefix} {venue}予定");
+                }
+                else
+                {
+                    summaryParts.Add($"{sessionPrefix} {statusName}");
+                }
+
+                // ストリップ
+                dto.ScheduleStrip.Add(new ScheduleStripItemDto
+                {
+                    SessionLabel = $"{sessionPrefix} {venue}",
+                    DetailLabel = $"{statusName} / {activityName}",
+                    StatusClass = MapStatusClass(entry.Status)
+                });
+            }
+
+            dto.ScheduleSummary = string.Join(" / ", summaryParts);
+        }
+
+        private static string MapStatusClass(ScheduleStatus status) => status switch
+        {
+            ScheduleStatus.Attended => "status-attended",
+            ScheduleStatus.Planned => "status-planned",
+            ScheduleStatus.Late => "status-late",
+            ScheduleStatus.EarlyLeave => "status-early-leave",
+            ScheduleStatus.Absent => "status-absent",
+            _ => "status-none"
+        };
+
+        /// <summary>2区間の重なり時間（時間単位）を返す。</summary>
+        private static double OverlapHours(DateTime aStart, DateTime aEnd, DateTime bStart, DateTime bEnd)
+        {
+            var s = aStart > bStart ? aStart : bStart;
+            var e = aEnd < bEnd ? aEnd : bEnd;
+            return e > s ? (e - s).TotalHours : 0;
+        }
+
+        /// <summary>上部チャート用の系列データを Days から構築する。</summary>
+        private static void BuildReportChart(WeeklyReportDto report)
+        {
+            foreach (var d in report.Days)
+            {
+                report.ReportChart.Labels.Add($"{d.Date.Month}/{d.Date.Day}");
+                report.ReportChart.Condition.Add(d.ConditionAvg);
+                report.ReportChart.Feeling.Add(d.FeelingAvg);
+                report.ReportChart.NightSleep.Add(d.NightSleepHours);
+                report.ReportChart.OtherSleep.Add(d.OtherSleepHours);
+            }
+        }
+
+        /// <summary>タイムラインチャート用データを構築する（時間帯ベース、日跨ぎ睡眠は前後分割）。</summary>
+        private static void BuildTimelineChart(
+            WeeklyReportDto report,
+            List<SleepRecordEntity> allSleep,
+            List<ScheduleEntryEntity> allSchedule)
+        {
+            foreach (var d in report.Days)
+            {
+                report.TimelineChart.Labels.Add($"{d.Date.Month}/{d.Date.Day} ({DayOfWeekShort[(int)d.Date.DayOfWeek]})");
+            }
+
+            // 各日について、当日 0-24h 軸での区間を構築
+            for (int i = 0; i < report.Days.Count; i++)
+            {
+                var day = report.Days[i].Date;
+                var dayStart = day;
+                var dayEnd = day.AddDays(1);
+
+                // 当日の朝（前日からの本睡眠が当日0時を跨いで終わる場合）
+                double? earlyStart = null, earlyEnd = null;
+                // 当日の夜（当日中に始まり当日中or翌日朝まで続く本睡眠）
+                double? lateStart = null, lateEnd = null;
+
+                foreach (var s in allSleep.Where(x => x.SleepType == SleepType.NightSleep && x.EndDate.HasValue))
+                {
+                    // 前夜開始 → 当日朝終了
+                    if (s.StartDate < dayStart && s.EndDate!.Value > dayStart && s.EndDate.Value <= dayEnd)
+                    {
+                        earlyStart = 0;
+                        earlyEnd = (s.EndDate.Value - dayStart).TotalHours;
+                    }
+                    // 当日深夜開始（22-24時台）→ 翌朝終了
+                    else if (s.StartDate >= dayStart && s.StartDate < dayEnd && s.EndDate!.Value > dayEnd)
+                    {
+                        lateStart = (s.StartDate - dayStart).TotalHours;
+                        lateEnd = 24;
+                    }
+                    // 当日中で完結する本睡眠（短い昼の本睡眠など）
+                    else if (s.StartDate >= dayStart && s.EndDate!.Value <= dayEnd)
+                    {
+                        // 早朝寄り or 深夜寄りで割り当て
+                        var startH = (s.StartDate - dayStart).TotalHours;
+                        var endH = (s.EndDate.Value - dayStart).TotalHours;
+                        if (startH < 12) { earlyStart ??= startH; earlyEnd ??= endH; }
+                        else { lateStart ??= startH; lateEnd ??= endH; }
+                    }
+                }
+                report.TimelineChart.NightSleepEarly.Add(earlyEnd.HasValue ? new double?[] { earlyStart, earlyEnd } : null);
+                report.TimelineChart.NightSleepLate.Add(lateEnd.HasValue ? new double?[] { lateStart, lateEnd } : null);
+
+                // 他睡眠（仮眠等）：当日内で複数あれば最初の1件を表示
+                var otherFirst = allSleep
+                    .Where(x => x.SleepType != SleepType.NightSleep && x.EndDate.HasValue
+                                && x.StartDate >= dayStart && x.EndDate!.Value <= dayEnd)
+                    .OrderBy(x => x.StartDate)
+                    .FirstOrDefault();
+                report.TimelineChart.OtherSleep.Add(otherFirst is not null
+                    ? new double?[]
+                    {
+                        (otherFirst.StartDate - dayStart).TotalHours,
+                        (otherFirst.EndDate!.Value - dayStart).TotalHours
+                    }
+                    : null);
+
+                // スケジュール: 当日分のうち AM/PM、欠席分は別系列で破線表示
+                var todaySchedule = allSchedule.Where(x => x.Date == DateOnly.FromDateTime(day)).ToList();
+                var am = todaySchedule.FirstOrDefault(x =>
+                    x.Session == ScheduleSession.AM && x.Status != ScheduleStatus.Absent);
+                var pm = todaySchedule.FirstOrDefault(x =>
+                    x.Session == ScheduleSession.PM && x.Status != ScheduleStatus.Absent);
+                var absent = todaySchedule.FirstOrDefault(x => x.Status == ScheduleStatus.Absent);
+
+                report.TimelineChart.ScheduleAm.Add(MakeScheduleBar(am, 9.5, 12.5));
+                report.TimelineChart.SchedulePm.Add(MakeScheduleBar(pm, 13.5, 15.5));
+                report.TimelineChart.ScheduleAbsent.Add(absent is null ? null
+                    : MakeScheduleBar(absent,
+                        absent.Session == ScheduleSession.AM ? 9.5 : 13.5,
+                        absent.Session == ScheduleSession.AM ? 12.5 : 15.5));
+            }
+        }
+
+        /// <summary>スケジュールエントリを [start_h, end_h] のタイムラインバーに変換する。</summary>
+        private static double?[]? MakeScheduleBar(ScheduleEntryEntity? entry, double defaultStart, double defaultEnd)
+        {
+            if (entry is null) return null;
+            var s = entry.StartTime?.ToTimeSpan().TotalHours ?? defaultStart;
+            var e = entry.EndTime?.ToTimeSpan().TotalHours ?? defaultEnd;
+            if (e <= s) return null;
+            return new double?[] { s, e };
         }
     }
 }
