@@ -676,13 +676,48 @@
         border-color: #CED4DA;
     }
 
-    .weekly-report-table th,
-    .weekly-report-table td {
-        min-width: 88px;
+    /* 日付詳細テーブル：列幅を固定（table-layout: fixed） */
+    .weekly-report-table {
+        table-layout: fixed;
+        width: 100%;
     }
 
-    .weekly-report-table td:nth-last-child(-n+2) {
-        min-width: 280px;
+    .weekly-report-table th,
+    .weekly-report-table td {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        vertical-align: top;
+    }
+
+    .weekly-report-table th:nth-child(1),
+    .weekly-report-table td:nth-child(1) {
+        width: 8%;
+    }
+
+    .weekly-report-table th:nth-child(2),
+    .weekly-report-table td:nth-child(2),
+    .weekly-report-table th:nth-child(3),
+    .weekly-report-table td:nth-child(3),
+    .weekly-report-table th:nth-child(4),
+    .weekly-report-table td:nth-child(4),
+    .weekly-report-table th:nth-child(5),
+    .weekly-report-table td:nth-child(5) {
+        width: 7%;
+    }
+
+    .weekly-report-table th:nth-child(6),
+    .weekly-report-table td:nth-child(6) {
+        width: 12%;
+    }
+
+    .weekly-report-table th:nth-child(7),
+    .weekly-report-table td:nth-child(7) {
+        width: 28%;
+    }
+
+    .weekly-report-table th:nth-child(8),
+    .weekly-report-table td:nth-child(8) {
+        width: 24%;
     }
 
     .record-note {
