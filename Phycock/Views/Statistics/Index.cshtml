@@ -7,6 +7,9 @@
     <div class="d-flex gap-2">
         <input id="weekStart" type="date" class="form-control" />
         <button id="reloadStats" type="button" class="btn btn-outline-primary">更新</button>
+        <button id="exportSamplePdf" type="button" class="btn btn-outline-secondary">
+            <i class="fa-regular fa-file-pdf"></i> PDF出力（サンプル）
+        </button>
     </div>
 </div>
 
@@ -121,9 +124,9 @@
                             <td>0.5h</td>
                             <td>AM 通所済み / PM 通所済み</td>
                             <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 3 / 症状: 眠気 / メモ: 起床直後は重い。</span></div>
-                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4 / 気分 4 / 症状: なし / メモ: 午後から集中できた。</span></div>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 5 / 気分 4 / 症状: なし / メモ: 帰宅後も安定。</span></div>
+                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 3 / 症状: 眠気<span class="record-memo">メモ: 起床直後は重い。</span></span></div>
+                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4 / 気分 4 / 症状: なし<span class="record-memo">メモ: 午後から集中できた。</span></span></div>
+                                <div class="record-note"><strong>就眠時</strong><span>体調 5 / 気分 4 / 症状: なし<span class="record-memo">メモ: 帰宅後も安定。</span></span></div>
                             </td>
                             <td>
                                 <div class="record-note"><strong>本睡眠</strong><span>6.5h / 途中で一度起きたが再入眠できた。</span></div>
@@ -138,8 +141,8 @@
                             <td>1.5h</td>
                             <td>PM 在宅予定</td>
                             <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 2 / 症状: 頭痛、不安 / メモ: 朝から緊張が強い。</span></div>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 3.5 / 気分 4 / 症状: 眠気 / メモ: 在宅後は落ち着いた。</span></div>
+                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 2 / 症状: 頭痛、不安<span class="record-memo">メモ: 朝から緊張が強い。</span></span></div>
+                                <div class="record-note"><strong>就眠時</strong><span>体調 3.5 / 気分 4 / 症状: 眠気<span class="record-memo">メモ: 在宅後は落ち着いた。</span></span></div>
                             </td>
                             <td>
                                 <div class="record-note"><strong>本睡眠</strong><span>5.0h / 夜間に中途覚醒。</span></div>
@@ -154,9 +157,9 @@
                             <td>1.0h</td>
                             <td>AM 遅刻 / PM 通所済み</td>
                             <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 3 / 症状: 不安、倦怠感 / メモ: 遅刻連絡済み。</span></div>
-                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4 / 気分 3.5 / 症状: 不安 / メモ: 作業量を調整。</span></div>
-                                <div class="record-note"><strong>訓練終了時</strong><span>体調 4.5 / 気分 4 / 症状: なし / メモ: 帰宅前は安定。</span></div>
+                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 3 / 症状: 不安、倦怠感<span class="record-memo">メモ: 遅刻連絡済み。</span></span></div>
+                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4 / 気分 3.5 / 症状: 不安<span class="record-memo">メモ: 作業量を調整。</span></span></div>
+                                <div class="record-note"><strong>訓練終了時</strong><span>体調 4.5 / 気分 4 / 症状: なし</span></div>
                             </td>
                             <td>
                                 <div class="record-note"><strong>本睡眠</strong><span>6.0h / 入眠に時間がかかった。</span></div>
@@ -171,8 +174,8 @@
                             <td>2.0h</td>
                             <td>AM 欠席</td>
                             <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 2.5 / 気分 2 / 症状: 眠気、頭痛 / メモ: 体調不良で休養。</span></div>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 3 / 気分 3.2 / 症状: 眠気 / メモ: 少し回復。</span></div>
+                                <div class="record-note"><strong>起床時</strong><span>体調 2.5 / 気分 2 / 症状: 眠気、頭痛<span class="record-memo">メモ: 体調不良で休養。</span></span></div>
+                                <div class="record-note"><strong>就眠時</strong><span>体調 3 / 気分 3.2 / 症状: 眠気<span class="record-memo">メモ: 少し回復。</span></span></div>
                             </td>
                             <td>
                                 <div class="record-note"><strong>本睡眠</strong><span>4.5h / 夜の睡眠が短い。</span></div>
@@ -187,8 +190,8 @@
                             <td>0.5h</td>
                             <td>AM 早退</td>
                             <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 4.5 / 気分 4 / 症状: なし / メモ: 体調は安定。</span></div>
-                                <div class="record-note"><strong>訓練終了時</strong><span>体調 4.3 / 気分 4.4 / 症状: 軽い倦怠感 / メモ: 念のため早退。</span></div>
+                                <div class="record-note"><strong>起床時</strong><span>体調 4.5 / 気分 4 / 症状: なし<span class="record-memo">メモ: 体調は安定。</span></span></div>
+                                <div class="record-note"><strong>訓練終了時</strong><span>体調 4.3 / 気分 4.4 / 症状: 軽い倦怠感</span></div>
                             </td>
                             <td>
                                 <div class="record-note"><strong>本睡眠</strong><span>7.0h / 本睡眠が取れて起床後も安定。</span></div>
@@ -202,7 +205,7 @@
                             <td>0h</td>
                             <td>予定なし</td>
                             <td>
-                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4.1 / 気分 4 / 症状: なし / メモ: 外出あり。疲労感は軽め。</span></div>
+                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4.1 / 気分 4 / 症状: なし</span></div>
                             </td>
                             <td>
                                 <div class="record-note"><strong>本睡眠</strong><span>7.5h / まとまって眠れた。</span></div>
@@ -216,7 +219,7 @@
                             <td>1.0h</td>
                             <td>予定なし</td>
                             <td>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 3.6 / 気分 3.4 / 症状: 不安 / メモ: 翌週の通所準備で緊張あり。</span></div>
+                                <div class="record-note"><strong>就眠時</strong><span>体調 3.6 / 気分 3.4 / 症状: 不安<span class="record-memo">メモ: 翌週の通所準備で緊張あり。</span></span></div>
                             </td>
                             <td>
                                 <div class="record-note"><strong>他睡眠</strong><span>1.0h / 夕方に短い仮眠。</span></div>
@@ -224,6 +227,27 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <section class="weekly-timeline-sample mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">睡眠時間帯 週次タイムライン（サンプル）</h2>
+                    <p class="text-muted small mb-0">1日24時間軸で睡眠と通所予定の時間帯を一週間まとめて確認します。日跨ぎ睡眠は前後の日に分割表示。</p>
+                </div>
+                <span class="badge text-bg-light border">サンプルデータ</span>
+            </div>
+
+            <div class="weekly-timeline-chart">
+                <canvas id="weeklyTimelineSampleChart" height="220"></canvas>
+            </div>
+            <div class="timeline-legend mt-2">
+                <span class="legend-item"><span class="legend-swatch" style="background:#5B7CFA;"></span>本睡眠</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:#8DD7BF;"></span>他睡眠 / 仮眠</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:#F59F00;"></span>通所予定（AM / PM）</span>
+                <span class="legend-item"><span class="legend-swatch legend-swatch-dashed"></span>通所予定 欠席（破線）</span>
+                <span class="legend-item text-muted">※ 早退時は予定時間を短縮表示</span>
             </div>
         </section>
 
@@ -466,14 +490,220 @@
             });
         }
 
+        let weeklyTimelineSampleChart;
+
+        function createWeeklyTimelineSampleChart() {
+            // 縦軸: 7日（上から月→日）。横軸: 0-24h。
+            // データは [開始時刻, 終了時刻] の浮動バー。null は当該日に該当無し。
+            // 日跨ぎ睡眠は「前日 [23.x, 24]」「当日 [0, 起床時刻]」の 2 バーに分割。
+            const labels = ['5/4 (月)', '5/5 (火)', '5/6 (水)', '5/7 (木)', '5/8 (金)', '5/9 (土)', '5/10 (日)'];
+
+            const nightSleepEarly = [
+                [0, 7.0],   // 月: 前夜から 7:00 まで
+                [0, 6.5],   // 火
+                [0, 6.0],   // 水
+                [0, 5.5],   // 木: 浅い
+                [0, 7.5],   // 金
+                [0, 7.5],   // 土
+                [0, 6.0]    // 日
+            ];
+            const nightSleepLate = [
+                [23.5, 24], // 月の夜（→翌火曜 0 時へ続く）
+                [23.0, 24], // 火
+                [23.0, 24], // 水
+                [22.5, 24], // 木
+                [23.5, 24], // 金
+                [23.0, 24], // 土
+                null         // 日: 翌週開始のため省略
+            ];
+            const otherSleep = [
+                null,
+                [14.0, 15.0], // 火: 仮眠
+                null,
+                [13.0, 14.5], // 木: 体調不良で日中休息
+                null,
+                null,
+                [17.0, 18.0]  // 日: 夕方の短い仮眠
+            ];
+            const scheduleAm = [
+                [9.5, 12.5],  // 月
+                null,           // 火: 予定なし
+                [9.5, 12.5],  // 水
+                null,           // 木: 欠席 → scheduleAbsent へ
+                [9.5, 12.5],  // 金
+                null,           // 土
+                null            // 日
+            ];
+            const scheduleAbsent = [
+                null,
+                null,
+                null,
+                [9.5, 12.5],  // 木: AM 欠席（破線表示）
+                null,
+                null,
+                null
+            ];
+            const schedulePm = [
+                [13.5, 15.5],
+                [13.5, 15.5], // 火: 在宅 PM
+                [13.5, 15.5],
+                null,
+                [13.5, 14.5], // 金: 早退で短く
+                null,
+                null
+            ];
+
+            const data = {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '本睡眠',
+                        data: nightSleepEarly,
+                        backgroundColor: '#5B7CFA',
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: '本睡眠（夜）',
+                        data: nightSleepLate,
+                        backgroundColor: '#5B7CFA',
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: '他睡眠 / 仮眠',
+                        data: otherSleep,
+                        backgroundColor: '#8DD7BF',
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: '通所 AM',
+                        data: scheduleAm,
+                        backgroundColor: 'rgba(245, 159, 0, 0.85)',
+                        borderColor: '#F59F00',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: '通所 PM',
+                        data: schedulePm,
+                        backgroundColor: 'rgba(245, 159, 0, 0.85)',
+                        borderColor: '#F59F00',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: '通所 欠席',
+                        data: scheduleAbsent,
+                        backgroundColor: 'rgba(245, 159, 0, 0.10)',
+                        borderColor: '#F59F00',
+                        borderWidth: 2,
+                        borderDash: [6, 4],
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    }
+                ]
+            };
+
+            const formatHour = (v) => {
+                const h = Math.floor(v);
+                const m = Math.round((v - h) * 60);
+                return m === 0 ? `${h}:00` : `${h}:${String(m).padStart(2, '0')}`;
+            };
+
+            const options = {
+                responsive: true,
+                indexAxis: 'y',
+                interaction: { mode: 'nearest', intersect: true },
+                plugins: {
+                    legend: {
+                        display: false  // 凡例は HTML 側で表示（本睡眠2バーの重複を避ける）
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const v = context.raw;
+                                if (!v) return '';
+                                return `${context.dataset.label}: ${formatHour(v[0])} - ${formatHour(v[1])}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        position: 'bottom',
+                        min: 0,
+                        max: 24,
+                        title: { display: true, text: '時刻 (0:00 - 24:00)' },
+                        ticks: {
+                            stepSize: 1,
+                            autoSkip: false,
+                            callback: (v) => `${v}`
+                        },
+                        grid: {
+                            color: (ctx) => ctx.tick && ctx.tick.value % 3 === 0
+                                ? 'rgba(0,0,0,0.18)'
+                                : 'rgba(0,0,0,0.07)',
+                            lineWidth: 1
+                        }
+                    },
+                    xTop: {
+                        type: 'linear',
+                        position: 'top',
+                        min: 0,
+                        max: 24,
+                        ticks: {
+                            stepSize: 1,
+                            autoSkip: false,
+                            callback: (v) => `${v}`
+                        },
+                        grid: { display: false }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { size: 13 } }
+                    }
+                }
+            };
+
+            if (weeklyTimelineSampleChart) {
+                weeklyTimelineSampleChart.data = data;
+                weeklyTimelineSampleChart.options = options;
+                weeklyTimelineSampleChart.update();
+                return;
+            }
+
+            weeklyTimelineSampleChart = new Chart(
+                document.getElementById('weeklyTimelineSampleChart'),
+                { type: 'bar', data: data, options: options }
+            );
+        }
+
         const today = new Date();
         const weekStart = new Date(today);
         weekStart.setDate(today.getDate() - today.getDay());
         $('#weekStart').val(toDateInputValue(weekStart));
         $('#reloadStats').on('click', loadStats);
         createWeeklyReportSampleChart();
+        createWeeklyTimelineSampleChart();
         loadStats();
     </script>
+    <script src="~/js/statistics-pdf-sample.js" asp-append-version="true"></script>
 }
 
 <style>
@@ -617,8 +847,56 @@
         min-width: 0;
     }
 
+    .record-memo {
+        display: block;
+        color: #6c757d;
+        margin-top: 0.15rem;
+    }
+
+    .weekly-timeline-sample {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #fff;
+    }
+
+    .weekly-timeline-chart {
+        min-height: 280px;
+    }
+
+    .timeline-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.9rem;
+        font-size: 0.85rem;
+        color: #495057;
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .legend-swatch {
+        display: inline-block;
+        width: 1.1rem;
+        height: 0.7rem;
+        border-radius: 3px;
+    }
+
+    .legend-swatch-dashed {
+        background: rgba(245, 159, 0, 0.10);
+        border: 2px dashed #F59F00;
+        height: 0.8rem;
+    }
+
     @@media print {
         .weekly-report-sample {
+            page-break-inside: avoid;
+        }
+
+        .weekly-timeline-sample {
             page-break-inside: avoid;
         }
 
