@@ -72,7 +72,7 @@
                 }
             </div>
 
-            <div class="table-responsive mt-3">
+            <div class="table-responsive mt-3 weekly-report-table-wrap">
                 <table class="table table-sm align-middle weekly-report-table">
                     <thead>
                         <tr>
@@ -786,12 +786,13 @@
         max-height: 380px;
     }
 
-    body.print-mode .weekly-report-sample,
     body.print-mode .weekly-timeline-sample {
         page-break-inside: avoid;
+        page-break-before: always;
     }
 
-    body.print-mode .weekly-timeline-sample {
+    /* 日付詳細テーブルの前で改ページ（チャート+ストリップとテーブルを別ページに） */
+    body.print-mode .weekly-report-table-wrap {
         page-break-before: always;
     }
 </style>
