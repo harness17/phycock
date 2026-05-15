@@ -3,6 +3,7 @@ using Phycock.Entity.Enums;
 using Phycock.Common;
 using Phycock.Models;
 using Phycock.Repository;
+using System.Reflection;
 
 namespace Phycock.Service
 {
@@ -226,40 +227,16 @@ namespace Phycock.Service
                 return new("#DDEFEF", "#2C9A9A", "#134F4F");
 
             if (activityType != ActivityType.Program)
-            {
-                return activityType switch
-                {
-                    ActivityType.IndividualTraining => new("#F4E5F8", "#8E44AD", "#4A235A"),
-                    ActivityType.DepartmentActivity => new("#D8EAF7", "#2874A6", "#1B4F72"),
-                    ActivityType.GoOut => new("#D9EAD3", "#6AA84F", "#274E13"),
-                    _ => new("#E7E6E6", "#A6A6A6", "#3C3C3C"),
-                };
-            }
+                return GetCalendarColor(activityType);
 
-            return programType switch
-            {
-                ProgramType.SelfWork => new("#F8CBAD", "#C55A11", "#4A2300"),
-                ProgramType.HealthCare => new("#E2F0D9", "#70AD47", "#254D1B"),
-                ProgramType.WorkplaceCommunication => new("#E4DFEC", "#8064A2", "#3D2A56"),
-                ProgramType.JobHunting => new("#DDEBF7", "#5B9BD5", "#1F4E79"),
-                ProgramType.ApplicationInterview => new("#F4CCCC", "#C00000", "#7F1D1D"),
-                ProgramType.PreWorkPreparation => new("#DDEBF7", "#2F75B5", "#1F4E79"),
-                ProgramType.OtherFreeInput => new("#FFFFFF", "#ADB5BD", "#343A40"),
-                _ => new("#E7E6E6", "#A6A6A6", "#3C3C3C"),
-            };
+            return programType.HasValue
+                ? GetCalendarColor(programType.Value)
+                : DefaultColor();
         }
 
         private static string GetStatusBorderColor(ScheduleStatus status)
         {
-            return status switch
-            {
-                ScheduleStatus.Planned => "#6C757D",
-                ScheduleStatus.Attended => "#198754",
-                ScheduleStatus.Absent => "#DC3545",
-                ScheduleStatus.Late => "#FFC107",
-                ScheduleStatus.EarlyLeave => "#FD7E14",
-                _ => "#6C757D",
-            };
+            return GetCalendarColor(status).BorderColor;
         }
 
         private static string BuildTimeRange(TimeOnly? startTime, TimeOnly? endTime)
@@ -269,6 +246,18 @@ namespace Phycock.Service
             if (!startTime.HasValue) return $"-{endTime:HH:mm}";
             return $"{startTime:HH:mm}-{endTime:HH:mm}";
         }
+
+        private static ScheduleEntryColor GetCalendarColor(Enum value)
+        {
+            var member = value.GetType().GetMember(value.ToString()).FirstOrDefault();
+            var color = member?.GetCustomAttribute<CalendarColorAttribute>();
+            return color == null
+                ? DefaultColor()
+                : new(color.BackgroundColor, color.BorderColor, color.TextColor);
+        }
+
+        private static ScheduleEntryColor DefaultColor()
+            => new("#E7E6E6", "#A6A6A6", "#3C3C3C");
 
         private sealed record ScheduleEntryColor(string BackgroundColor, string BorderColor, string TextColor);
     }
