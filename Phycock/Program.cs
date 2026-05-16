@@ -122,12 +122,18 @@ Dev.CommonLibrary.Common.Logger.GetLogger().SetLogger(loggerFactory.CreateLogger
 
 // DB マイグレーション適用・Seed
 // MigrateAsync は未適用のマイグレーションを順次適用する（新規 DB 作成も含む）
-await using (var scope = app.Services.CreateAsyncScope())
+// 開発時のブラウザ smoke check では DB 接続問題の切り分けのため明示的にスキップできる。
+var skipDatabaseInitialization = app.Environment.IsDevelopment()
+    && builder.Configuration.GetValue<bool>("AppSettings:SkipDatabaseInitialization");
+if (!skipDatabaseInitialization)
 {
-    var sp = scope.ServiceProvider;
-    var context = sp.GetRequiredService<DBContext>();
-    await context.Database.MigrateAsync();
-    await SeedAsync(sp);
+    await using (var scope = app.Services.CreateAsyncScope())
+    {
+        var sp = scope.ServiceProvider;
+        var context = sp.GetRequiredService<DBContext>();
+        await context.Database.MigrateAsync();
+        await SeedAsync(sp);
+    }
 }
 
 // 体調・通所データを扱うため、環境に関わらず内部例外は画面へ露出させない。
