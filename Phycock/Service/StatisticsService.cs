@@ -123,6 +123,54 @@ namespace Phycock.Service
             return report;
         }
 
+        /// <summary>月次カレンダー用の日別集計を取得する。</summary>
+        public MonthlyCalendarDto GetMonthlyCalendar(string userId, int year, int month)
+        {
+            var monthStart = new DateTime(year, month, 1);
+            var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+            var gridStart = monthStart.AddDays(-(int)monthStart.DayOfWeek);
+            var gridEnd = monthEnd.AddDays(6 - (int)monthEnd.DayOfWeek);
+
+            var sleepStart = monthStart.AddDays(-1);
+            var healthRecords = _healthRecordRepository.GetByUserAndRange(userId, monthStart, monthEnd);
+            var sleepRecords = _sleepRecordRepository.GetByUserAndRange(userId, sleepStart, monthEnd);
+            var scheduleEntries = _scheduleEntryRepository.GetByUserAndRange(
+                userId,
+                DateOnly.FromDateTime(monthStart),
+                DateOnly.FromDateTime(monthEnd));
+
+            var calendar = new MonthlyCalendarDto
+            {
+                Year = year,
+                Month = month
+            };
+
+            for (var day = gridStart; day <= gridEnd; day = day.AddDays(1))
+            {
+                var inMonth = day >= monthStart && day <= monthEnd;
+                var daily = inMonth
+                    ? BuildDailyReport(day, healthRecords, sleepRecords, scheduleEntries)
+                    : new DailyReportDto { Date = day };
+                var sleepTotal = Math.Round(daily.NightSleepHours + daily.OtherSleepHours, 2);
+
+                calendar.Cells.Add(new MonthlyDayCellDto
+                {
+                    Date = day,
+                    InMonth = inMonth,
+                    ConditionAvg = inMonth ? daily.ConditionAvg : null,
+                    FeelingAvg = inMonth ? daily.FeelingAvg : null,
+                    SleepTotalHours = inMonth ? sleepTotal : 0,
+                    SleepLevel = inMonth ? SleepStandards.Classify(sleepTotal) : SleepLevel.None,
+                    ScheduleDayClass = inMonth ? daily.ScheduleDayClass : "rest",
+                    ScheduleSummary = inMonth && daily.ScheduleSummaryLines.Count > 0
+                        ? string.Join("、", daily.ScheduleSummaryLines)
+                        : "予定なし"
+                });
+            }
+
+            return calendar;
+        }
+
         private static DailyReportDto BuildDailyReport(
             DateTime day,
             List<HealthRecordEntity> allHealth,

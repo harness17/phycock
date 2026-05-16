@@ -47,7 +47,8 @@ namespace Phycock.Controllers
                 var userId = await ResolveTargetUserIdAsync();
                 var vm = new StatisticsViewModel
                 {
-                    WeeklyReport = _service.GetWeeklyReport(userId, ws)
+                    WeeklyReport = _service.GetWeeklyReport(userId, ws),
+                    MonthlyCalendar = _service.GetMonthlyCalendar(userId, ws.Year, ws.Month)
                 };
                 return View(vm);
             }

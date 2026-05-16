@@ -9,6 +9,19 @@
     var weekStart = Model.WeeklyReport.WeekStart;
     var weekStartIso = weekStart.ToString("yyyy-MM-dd");
     var report = Model.WeeklyReport;
+    var monthlyCalendar = Model.MonthlyCalendar;
+    Func<double?, string> scoreClass = value =>
+    {
+        if (!value.HasValue) return "score-none";
+        return value.Value switch
+        {
+            < 1.5 => "score-1",
+            < 2.5 => "score-2",
+            < 3.5 => "score-3",
+            < 4.5 => "score-4",
+            _ => "score-5"
+        };
+    };
 }
 
 @if (!isPrint)
@@ -50,7 +63,7 @@
             </div>
             <div class="chart-guide mt-2">
                 <span class="sleep-target-swatch"></span>
-                <span>背景の黄色帯: 正常な睡眠時間の目安（6-8時間）</span>
+                <span>背景の黄色帯: 正常な睡眠時間の目安（7-9時間）</span>
             </div>
 
             <div class="weekly-schedule-strip mt-3" aria-label="通所スケジュール">
@@ -165,12 +178,75 @@
     @if (!isPrint)
     {
     <div class="tab-pane fade" id="monthly" role="tabpanel">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">月次 体調・気分</h5>
+        <section class="monthly-calendar mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">月次カレンダー</h2>
+                    <p class="text-muted small mb-0">体調、気分、睡眠合計、通所予定を日別に確認します。</p>
+                </div>
+                <span class="text-muted small">@monthlyCalendar.Year/@monthlyCalendar.Month.ToString("00")</span>
+            </div>
+
+            <div class="monthly-calendar-grid" role="table" aria-label="月次統計カレンダー">
+                <div class="monthly-weekdays" role="row">
+                    <div role="columnheader">日</div>
+                    <div role="columnheader">月</div>
+                    <div role="columnheader">火</div>
+                    <div role="columnheader">水</div>
+                    <div role="columnheader">木</div>
+                    <div role="columnheader">金</div>
+                    <div role="columnheader">土</div>
+                </div>
+                <div class="monthly-days" role="rowgroup">
+                    @foreach (var cell in monthlyCalendar.Cells)
+                    {
+                        var sleepClass = $"sleep-{cell.SleepLevel.ToString().ToLowerInvariant()}";
+                        var scheduleClass = $"schedule-{cell.ScheduleDayClass}";
+                        <div class="monthly-day @(cell.InMonth ? "" : "outside-month")" role="cell">
+                            <div class="monthly-day-number">@cell.Date.Day</div>
+                            @if (cell.InMonth)
+                            {
+                                <div class="monthly-metrics">
+                                    <span class="monthly-metric @scoreClass(cell.ConditionAvg)">
+                                        <span>体調</span>
+                                        <strong>@(cell.ConditionAvg?.ToString("0.0") ?? "-")</strong>
+                                    </span>
+                                    <span class="monthly-metric @scoreClass(cell.FeelingAvg)">
+                                        <span>気分</span>
+                                        <strong>@(cell.FeelingAvg?.ToString("0.0") ?? "-")</strong>
+                                    </span>
+                                    <span class="monthly-metric @sleepClass">
+                                        <span>睡眠</span>
+                                        <strong>@($"{cell.SleepTotalHours:0.0}h")</strong>
+                                    </span>
+                                    <span class="monthly-schedule-chip @scheduleClass">@cell.ScheduleSummary</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="monthly-legend mt-3" aria-label="凡例">
+                <span class="legend-item"><span class="legend-swatch score-1"></span>体調・気分 1</span>
+                <span class="legend-item"><span class="legend-swatch score-3"></span>体調・気分 3</span>
+                <span class="legend-item"><span class="legend-swatch score-5"></span>体調・気分 5</span>
+                <span class="legend-item"><span class="legend-swatch sleep-insufficient"></span>睡眠 &lt;6h</span>
+                <span class="legend-item"><span class="legend-swatch sleep-slightlyshort"></span>睡眠 6-7h</span>
+                <span class="legend-item"><span class="legend-swatch sleep-adequate"></span>睡眠 7-9h</span>
+                <span class="legend-item"><span class="legend-swatch sleep-excessive"></span>睡眠 &gt;9h</span>
+                <span class="legend-item"><span class="legend-swatch schedule-planned"></span>通所</span>
+                <span class="legend-item"><span class="legend-swatch schedule-remote"></span>在宅</span>
+                <span class="legend-item"><span class="legend-swatch schedule-rest"></span>予定なし</span>
+            </div>
+        </section>
+
+        <section class="monthly-chart">
+            <div>
+                <h2 class="h5 mb-3">月次 体調・気分</h2>
                 <canvas id="monthlyHealthChart" height="120"></canvas>
             </div>
-        </div>
+        </section>
     </div>
     }
 </div>
@@ -212,8 +288,8 @@
                 const { chartArea, ctx } = chart;
                 if (!yScale || !chartArea || pluginOptions?.enabled === false) return;
 
-                const from = pluginOptions?.from ?? 6;
-                const to = pluginOptions?.to ?? 8;
+                const from = pluginOptions?.from ?? 7;
+                const to = pluginOptions?.to ?? 9;
                 const yTop = yScale.getPixelForValue(to);
                 const yBottom = yScale.getPixelForValue(from);
 
@@ -296,8 +372,8 @@
                 plugins: {
                     legend: { position: 'bottom' },
                     sleepTargetBand: {
-                        from: 6,
-                        to: 8,
+                        from: 7,
+                        to: 9,
                         color: 'rgba(255, 193, 7, 0.16)',
                         borderColor: 'rgba(245, 159, 0, 0.45)'
                     },
@@ -751,6 +827,176 @@
         border-radius: 8px;
         padding: 1rem;
         background: #fff;
+    }
+
+    .monthly-calendar,
+    .monthly-chart {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #fff;
+    }
+
+    .monthly-calendar-grid {
+        min-width: 760px;
+    }
+
+    .monthly-weekdays,
+    .monthly-days {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(104px, 1fr));
+    }
+
+    .monthly-weekdays > div {
+        padding: 0.35rem 0.5rem;
+        color: #6c757d;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-align: center;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .monthly-day {
+        min-height: 148px;
+        border-right: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.45rem;
+        background: #fff;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .monthly-day:nth-child(7n + 1) {
+        border-left: 1px solid #dee2e6;
+    }
+
+    .monthly-day.outside-month {
+        background: #f8f9fa;
+        color: #adb5bd;
+    }
+
+    .monthly-day-number {
+        font-weight: 700;
+        font-size: 0.92rem;
+        line-height: 1.2;
+        margin-bottom: 0.4rem;
+    }
+
+    .monthly-metrics {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .monthly-metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 5px;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        border: 1px solid transparent;
+    }
+
+    .monthly-metric strong {
+        font-size: 0.8rem;
+    }
+
+    .monthly-schedule-chip {
+        display: block;
+        border-radius: 5px;
+        padding: 0.3rem 0.4rem;
+        font-size: 0.75rem;
+        line-height: 1.25;
+        border: 1px solid transparent;
+    }
+
+    .score-none,
+    .sleep-none {
+        color: #6c757d;
+        background: #f1f3f5;
+        border-color: #dee2e6;
+    }
+
+    .score-1 {
+        color: #842029;
+        background: #f8d7da;
+        border-color: #f1aeb5;
+    }
+
+    .score-2 {
+        color: #8a4b08;
+        background: #fff3cd;
+        border-color: #ffe69c;
+    }
+
+    .score-3 {
+        color: #41464b;
+        background: #e9ecef;
+        border-color: #ced4da;
+    }
+
+    .score-4 {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #a3cfbb;
+    }
+
+    .score-5 {
+        color: #0a3622;
+        background: #bfe7cf;
+        border-color: #8bc9a6;
+    }
+
+    .sleep-insufficient {
+        color: #842029;
+        background: #f8d7da;
+        border-color: #f1aeb5;
+    }
+
+    .sleep-slightlyshort {
+        color: #664d03;
+        background: #fff3cd;
+        border-color: #ffe69c;
+    }
+
+    .sleep-adequate {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #a3cfbb;
+    }
+
+    .sleep-excessive {
+        color: #084298;
+        background: #cfe2ff;
+        border-color: #9ec5fe;
+    }
+
+    .schedule-planned {
+        color: #084298;
+        background: #cfe2ff;
+        border-color: #9ec5fe;
+    }
+
+    .schedule-remote {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #a3cfbb;
+    }
+
+    .schedule-rest {
+        color: #495057;
+        background: #f8f9fa;
+        border-color: #ced4da;
+    }
+
+    .monthly-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        font-size: 0.82rem;
+        color: #495057;
     }
 
     .weekly-timeline-chart {

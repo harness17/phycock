@@ -1,3 +1,5 @@
+using Phycock.Common;
+
 namespace Phycock.Models
 {
     /// <summary>
@@ -19,6 +21,30 @@ namespace Phycock.Models
 
         /// <summary>週次レポート（DBデータから生成、表示・PDF両用）。</summary>
         public WeeklyReportDto WeeklyReport { get; set; } = new();
+
+        /// <summary>月次カレンダー用の日別集計。</summary>
+        public MonthlyCalendarDto MonthlyCalendar { get; set; } = new();
+    }
+
+    /// <summary>月次カレンダー DTO。</summary>
+    public class MonthlyCalendarDto
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public List<MonthlyDayCellDto> Cells { get; set; } = new();
+    }
+
+    /// <summary>月次カレンダーの1日セル DTO。</summary>
+    public class MonthlyDayCellDto
+    {
+        public DateTime Date { get; set; }
+        public bool InMonth { get; set; }
+        public double? ConditionAvg { get; set; }
+        public double? FeelingAvg { get; set; }
+        public double SleepTotalHours { get; set; }
+        public SleepLevel SleepLevel { get; set; }
+        public string ScheduleDayClass { get; set; } = "rest";
+        public string ScheduleSummary { get; set; } = "予定なし";
     }
 
     /// <summary>
