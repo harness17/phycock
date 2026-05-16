@@ -80,6 +80,33 @@ namespace Tests.SleepRecord
             Assert.Equal("#31135E", item.TextColor);
             Assert.Equal("本睡眠", item.ExtendedProps.PrimaryText);
             Assert.Equal("22:00-06:00 8.0h", item.ExtendedProps.SecondaryText);
+            Assert.Equal(0, item.ExtendedProps.SortOrder);
+        }
+
+        [Fact]
+        public void GetEventsForCalendar_DaytimeNap_SetsSortOrderFromStartTime()
+        {
+            var repository = new Mock<SleepRecordRepository>(null!);
+            repository.Setup(x => x.GetByUserAndRange("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 5, 31)))
+                .Returns(new List<SleepRecordEntity>
+                {
+                    new()
+                    {
+                        Id = 21,
+                        UserId = "user-1",
+                        RecordDate = new DateTime(2026, 5, 3),
+                        StartDate = new DateTime(2026, 5, 3, 13, 15, 0),
+                        EndDate = new DateTime(2026, 5, 3, 13, 45, 0),
+                        SleepType = SleepType.DaytimeNap,
+                    },
+                });
+            var service = new SleepRecordService(repository.Object);
+
+            var result = service.GetEventsForCalendar("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 6, 1));
+
+            var item = Assert.Single(result);
+            Assert.Equal("仮眠", item.Title);
+            Assert.Equal(795, item.ExtendedProps.SortOrder);
         }
 
         [Fact]

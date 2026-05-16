@@ -230,7 +230,21 @@ namespace Phycock.Service
                     PrimaryText = primaryText,
                     SecondaryText = $"気分:{entity.Feeling.GetDisplayName()}",
                     NoteText = string.IsNullOrWhiteSpace(symptoms) ? null : symptoms,
+                    SortOrder = GetTimingSortOrder(entity.RecordTiming),
                 },
+            };
+        }
+
+        /// <summary>統合カレンダーの並び順キー。1日の流れ上の代表時刻（分換算）を返す。</summary>
+        private static int GetTimingSortOrder(RecordTiming timing)
+        {
+            return timing switch
+            {
+                RecordTiming.Morning => 360,   // 06:00（本睡眠の後）
+                RecordTiming.Noon => 510,      // 08:30（通所予定の前）
+                RecordTiming.Evening => 945,   // 15:45（通所予定の後）
+                RecordTiming.Night => 1439,    // 23:59（1日の最後）
+                _ => 720,
             };
         }
 

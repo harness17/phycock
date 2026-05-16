@@ -116,6 +116,36 @@ namespace Tests.HealthRecord
             Assert.Equal("気分:やや良い", item.ExtendedProps.SecondaryText);
             Assert.True(item.AllDay);
             Assert.Equal("#fd7e14", item.Color);
+            Assert.Equal(360, item.ExtendedProps.SortOrder);
+        }
+
+        [Theory]
+        [InlineData(RecordTiming.Morning, 360)]
+        [InlineData(RecordTiming.Noon, 510)]
+        [InlineData(RecordTiming.Evening, 945)]
+        [InlineData(RecordTiming.Night, 1439)]
+        public void GetEventsForCalendar_SetsSortOrderFromRecordTiming(RecordTiming timing, int expectedSortOrder)
+        {
+            var repository = new Mock<HealthRecordRepository>(null!);
+            repository.Setup(x => x.GetByUserAndRange("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 5, 31)))
+                .Returns(new List<HealthRecordEntity>
+                {
+                    new()
+                    {
+                        Id = 10,
+                        UserId = "user-1",
+                        RecordDate = new DateTime(2026, 5, 3),
+                        RecordTiming = timing,
+                        Condition = ConditionLevel.Normal,
+                        Feeling = FeelingLevel.Normal,
+                    },
+                });
+            var service = new HealthRecordService(repository.Object);
+
+            var result = service.GetEventsForCalendar("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 6, 1));
+
+            var item = Assert.Single(result);
+            Assert.Equal(expectedSortOrder, item.ExtendedProps.SortOrder);
         }
 
         [Fact]

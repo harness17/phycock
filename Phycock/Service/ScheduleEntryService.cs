@@ -177,6 +177,9 @@ namespace Phycock.Service
                     Status = entity.Status.GetDisplayName(),
                     ActivityType = entity.ActivityType.GetDisplayName(),
                     ActivityNote = entity.ActivityNote,
+                    SortOrder = entity.StartTime.HasValue
+                        ? entity.StartTime.Value.Hour * 60 + entity.StartTime.Value.Minute
+                        : 540,
                 },
             };
         }

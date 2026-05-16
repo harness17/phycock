@@ -169,8 +169,16 @@ namespace Phycock.Service
                     PrimaryText = entity.SleepType.GetDisplayName(),
                     SecondaryText = string.IsNullOrWhiteSpace(duration) ? timeRange : $"{timeRange} {duration}",
                     NoteText = entity.Memo,
+                    SortOrder = GetSleepSortOrder(entity),
                 },
             };
+        }
+
+        /// <summary>統合カレンダーの並び順キー。本睡眠は1日の先頭、それ以外は実際の開始時刻（分換算）。</summary>
+        private static int GetSleepSortOrder(SleepRecordEntity entity)
+        {
+            if (entity.SleepType == SleepType.NightSleep) return 0;
+            return entity.StartDate.Hour * 60 + entity.StartDate.Minute;
         }
 
         private static SleepRecordColor GetSleepTypeColor(SleepType sleepType)

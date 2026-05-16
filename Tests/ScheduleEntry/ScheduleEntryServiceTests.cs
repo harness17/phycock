@@ -79,6 +79,7 @@ namespace Tests.ScheduleEntry
             Assert.Equal("AM プログラム", item.ExtendedProps.PrimaryText);
             Assert.Equal("通所 / 予定", item.ExtendedProps.SecondaryText);
             Assert.Equal("応募書類", item.ExtendedProps.NoteText);
+            Assert.Equal(540, item.ExtendedProps.SortOrder);
         }
 
         [Fact]
@@ -105,6 +106,31 @@ namespace Tests.ScheduleEntry
             Assert.Equal("#F4E5F8", item.BackgroundColor);
             Assert.Equal("#6C757D", item.BorderColor);
             Assert.Equal("#4A235A", item.TextColor);
+        }
+
+        [Fact]
+        public void GetEventsForCalendar_WithStartTime_SetsSortOrderFromStartTime()
+        {
+            var repository = new Mock<ScheduleEntryRepository>(null!);
+            repository.Setup(x => x.GetByUserAndRange("user-1", new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 31)))
+                .Returns(new List<ScheduleEntryEntity>
+                {
+                    new()
+                    {
+                        Id = 6,
+                        UserId = "user-1",
+                        Date = new DateOnly(2026, 5, 4),
+                        Session = ScheduleSession.PM,
+                        ActivityType = ActivityType.IndividualTraining,
+                        StartTime = new TimeOnly(13, 30),
+                    },
+                });
+            var service = new ScheduleEntryService(repository.Object);
+
+            var result = service.GetEventsForCalendar("user-1", new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 31));
+
+            var item = Assert.Single(result);
+            Assert.Equal(810, item.ExtendedProps.SortOrder);
         }
 
         [Theory]
