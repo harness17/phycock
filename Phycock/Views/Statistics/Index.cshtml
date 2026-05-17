@@ -14,6 +14,9 @@
     var printSection = Context.Request.Query["section"] == "monthly" ? "monthly" : "weekly";
     var printWeekly = !isPrint || printSection == "weekly";
     var printMonthly = !isPrint || printSection == "monthly";
+    // 月次チャートで週区切りの縦線を引く位置（最初の日曜にあたるデータ点の index）
+    var monthFirstDow = (int)new DateTime(monthlyCalendar.Year, monthlyCalendar.Month, 1).DayOfWeek;
+    var monthlyWeekStartOffset = (7 - monthFirstDow) % 7;
 
     string ScoreClass(double? value)
     {
@@ -280,6 +283,7 @@
         const reportChartData = @Html.Raw(Json.Serialize(report.ReportChart));
         const timelineChartData = @Html.Raw(Json.Serialize(report.TimelineChart));
         const monthlyReportChartData = @Html.Raw(Json.Serialize(Model.MonthlyCalendar.ReportChart));
+        const monthlyWeekStartOffset = @monthlyWeekStartOffset;
         let weeklyReportSampleChart;
         let monthlyReportChart;
 
@@ -431,6 +435,13 @@
 
         function createMonthlyReportChart() {
             const { data, options } = reportChartConfig(monthlyReportChartData);
+            // 一週間ごと（日曜起点）に縦線を引いて週の区切りを見やすくする
+            const isWeekStart = (i) => i >= 0 && (i - monthlyWeekStartOffset) % 7 === 0;
+            options.scales.x.grid = {
+                display: true,
+                color: (ctx) => isWeekStart(ctx.index) ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.05)',
+                lineWidth: (ctx) => isWeekStart(ctx.index) ? 1.5 : 1
+            };
             monthlyReportChart = new Chart(document.getElementById('monthlyReportChart'), {
                 data: data,
                 options: options,
