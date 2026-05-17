@@ -10,6 +10,10 @@
     var weekStartIso = weekStart.ToString("yyyy-MM-dd");
     var report = Model.WeeklyReport;
     var monthlyCalendar = Model.MonthlyCalendar;
+    // PDF出力時の対象セクション（print=1 のときのみ有効）。monthly 以外は weekly 扱い。
+    var printSection = Context.Request.Query["section"] == "monthly" ? "monthly" : "weekly";
+    var printWeekly = !isPrint || printSection == "weekly";
+    var printMonthly = !isPrint || printSection == "monthly";
 
     string ScoreClass(double? value)
     {
@@ -46,6 +50,8 @@
 }
 
 <div class="tab-content">
+    @if (printWeekly)
+    {
     <div class="@(isPrint ? "" : "tab-pane fade show active")" id="weekly" role="tabpanel">
         <section class="weekly-report-sample mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
@@ -173,9 +179,10 @@
             </div>
         </section>
     </div>
-    @if (!isPrint)
+    }
+    @if (printMonthly)
     {
-    <div class="tab-pane fade" id="monthly" role="tabpanel">
+    <div class="@(isPrint ? "" : "tab-pane fade")" id="monthly" role="tabpanel">
         <section class="monthly-calendar mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
@@ -258,6 +265,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
         const isPrintMode = @(isPrint ? "true" : "false");
+        const printSection = '@printSection';
         const currentWeekStart = '@weekStartIso';
         // サーバー側（DBデータ）から注入するチャート用データ
         const reportChartData = @Html.Raw(Json.Serialize(report.ReportChart));
@@ -580,8 +588,13 @@
 
         if (isPrintMode) {
             // ポイント: print=1 のときはサーバー側 Playwright が描画完了を window.chartsReady で検知する
-            createWeeklyReportSampleChart();
-            createWeeklyTimelineSampleChart();
+            // section に応じて描画するチャートを切り替える（不在の canvas を触らない）
+            if (printSection === 'monthly') {
+                createMonthlyReportChart();
+            } else {
+                createWeeklyReportSampleChart();
+                createWeeklyTimelineSampleChart();
+            }
             // requestAnimationFrame 2回でレイアウト確定 → chartsReady を立てる
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 window.chartsReady = true;
@@ -593,9 +606,13 @@
                 const ws = $('#weekStart').val();
                 window.location.href = '@Url.Action("Index", "Statistics")' + '?weekStart=' + encodeURIComponent(ws);
             });
+            // PDF出力: アクティブなタブ（週次/月次）に応じて出力対象を切り替える
             $('#exportPdf').on('click', function () {
                 const ws = $('#weekStart').val();
-                window.location.href = '@Url.Action("ExportPdf", "Statistics")' + '?weekStart=' + encodeURIComponent(ws);
+                const activeTab = document.querySelector('.nav-tabs .nav-link.active');
+                const section = activeTab?.dataset.bsTarget === '#monthly' ? 'monthly' : 'weekly';
+                window.location.href = '@Url.Action("ExportPdf", "Statistics")'
+                    + '?weekStart=' + encodeURIComponent(ws) + '&section=' + section;
             });
             createWeeklyReportSampleChart();
             createWeeklyTimelineSampleChart();
@@ -1074,5 +1091,22 @@
     /* 日付詳細テーブルの前で改ページ（チャート+ストリップとテーブルを別ページに） */
     body.print-mode .weekly-report-table-wrap {
         page-break-before: always;
+    }
+
+    /* 月次PDF: カレンダーとチャートを別ページに分ける */
+    body.print-mode .monthly-chart {
+        page-break-before: always;
+    }
+
+    body.print-mode .monthly-calendar {
+        page-break-inside: avoid;
+    }
+
+    body.print-mode .monthly-report-chart {
+        min-height: 0;
+    }
+
+    body.print-mode .monthly-report-chart canvas {
+        max-height: 340px;
     }
 </style>

@@ -97,17 +97,20 @@ namespace Phycock.Controllers
         /// 認証クッキーは現リクエストのものを Playwright ブラウザコンテキストに転送する。
         /// </remarks>
         [HttpGet]
-        public async Task<IActionResult> ExportPdf(DateTime? weekStart)
+        public async Task<IActionResult> ExportPdf(DateTime? weekStart, string section = "weekly")
         {
             try
             {
-                var ws = NormalizeWeekStart(weekStart).ToString("yyyy-MM-dd");
+                var isMonthly = section == "monthly";
+                var wsDate = NormalizeWeekStart(weekStart);
+                var ws = wsDate.ToString("yyyy-MM-dd");
 
                 // ループバック用の内部URL。IIS in-process では IServerAddressesFeature が
                 // ワイルドカードホスト（http://*:80 等）を返し Uri 解析に失敗するため、
                 // また PathBase を含めないとサブアプリ配置で 404 になるため、現リクエストから組み立てる。
                 var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
-                var url = $"{Request.Scheme}://{Request.Host}{pathBase}/Statistics?print=1&weekStart={ws}";
+                var printSection = isMonthly ? "monthly" : "weekly";
+                var url = $"{Request.Scheme}://{Request.Host}{pathBase}/Statistics?print=1&weekStart={ws}&section={printSection}";
 
                 // 現リクエストの認証クッキーを Playwright 用に変換（ループバックなので Secure=false）
                 var host = Request.Host.Host;
@@ -136,13 +139,15 @@ namespace Phycock.Controllers
                     userLabel = User.Identity?.Name ?? "user";
                 }
                 var safeUser = SanitizeFileNamePart(userLabel);
-                var fileName = $"Phycock_週次レポート_{safeUser}_{ws}.pdf";
+                var reportLabel = isMonthly ? "月次レポート" : "週次レポート";
+                var period = isMonthly ? wsDate.ToString("yyyy-MM") : ws;
+                var fileName = $"Phycock_{reportLabel}_{safeUser}_{period}.pdf";
 
                 return File(pdfBytes, "application/pdf", fileName);
             }
             catch (Exception ex)
             {
-                _logger.Error(new LogModel($"PDF出力に失敗しました。weekStart={weekStart:O}"), ex);
+                _logger.Error(new LogModel($"PDF出力に失敗しました。weekStart={weekStart:O}, section={section}"), ex);
                 return StatusCode(StatusCodes.Status500InternalServerError, "PDF出力に失敗しました。しばらく時間をおいてから再度お試しください。");
             }
         }
