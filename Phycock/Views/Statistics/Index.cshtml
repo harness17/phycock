@@ -10,18 +10,16 @@
     var weekStartIso = weekStart.ToString("yyyy-MM-dd");
     var report = Model.WeeklyReport;
     var monthlyCalendar = Model.MonthlyCalendar;
-    Func<double?, string> scoreClass = value =>
+
+    string ScoreClass(double? value)
     {
-        if (!value.HasValue) return "score-none";
-        return value.Value switch
-        {
-            < 1.5 => "score-1",
-            < 2.5 => "score-2",
-            < 3.5 => "score-3",
-            < 4.5 => "score-4",
-            _ => "score-5"
-        };
-    };
+        if (value is not double v) return "score-none";
+        if (v < 1.5) return "score-1";
+        if (v < 2.5) return "score-2";
+        if (v < 3.5) return "score-3";
+        if (v < 4.5) return "score-4";
+        return "score-5";
+    }
 }
 
 @if (!isPrint)
@@ -207,11 +205,11 @@
                             @if (cell.InMonth)
                             {
                                 <div class="monthly-metrics">
-                                    <span class="monthly-metric @scoreClass(cell.ConditionAvg)">
+                                    <span class="monthly-metric @ScoreClass(cell.ConditionAvg)">
                                         <span>体調</span>
                                         <strong>@(cell.ConditionAvg?.ToString("0.0") ?? "-")</strong>
                                     </span>
-                                    <span class="monthly-metric @scoreClass(cell.FeelingAvg)">
+                                    <span class="monthly-metric @ScoreClass(cell.FeelingAvg)">
                                         <span>気分</span>
                                         <strong>@(cell.FeelingAvg?.ToString("0.0") ?? "-")</strong>
                                     </span>
