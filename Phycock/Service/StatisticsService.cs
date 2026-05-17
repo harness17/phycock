@@ -47,25 +47,6 @@ namespace Phycock.Service
             return result;
         }
 
-        /// <summary>月次体調統計を取得する。</summary>
-        public ChartSeriesDto GetMonthlyHealthStats(string userId, int year, int month)
-        {
-            var start = new DateTime(year, month, 1);
-            var end = start.AddMonths(1).AddDays(-1);
-            var records = _healthRecordRepository.GetByUserAndRange(userId, start, end);
-            var result = new ChartSeriesDto();
-
-            for (var day = start; day <= end; day = day.AddDays(1))
-            {
-                var dayRecords = records.Where(x => x.RecordDate.Date == day).ToList();
-                result.Labels.Add(day.ToString("MM/dd"));
-                result.ConditionData.Add(dayRecords.Count == 0 ? null : Math.Round(dayRecords.Average(x => (int)x.Condition), 2));
-                result.FeelingData.Add(dayRecords.Count == 0 ? null : Math.Round(dayRecords.Average(x => (int)x.Feeling), 2));
-            }
-
-            return result;
-        }
-
         /// <summary>週次睡眠統計を取得する。</summary>
         public ChartSeriesDto GetWeeklySleepStats(string userId, DateTime weekStart)
         {

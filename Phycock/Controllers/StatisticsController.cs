@@ -76,20 +76,6 @@ namespace Phycock.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetHealthMonthly(int year, int month)
-        {
-            try
-            {
-                return Json(_service.GetMonthlyHealthStats(await ResolveTargetUserIdAsync(), year, month));
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(new LogModel($"月次体調統計の取得中にエラーが発生しました。year={year}, month={month}"), ex);
-                return StatusCode(StatusCodes.Status500InternalServerError, new { error = DatabaseErrorMessage });
-            }
-        }
-
-        [HttpGet]
         public async Task<IActionResult> GetSleepWeekly(DateTime weekStart)
         {
             try
