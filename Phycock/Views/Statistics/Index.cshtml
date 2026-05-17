@@ -270,7 +270,7 @@
             </div>
         </section>
 
-        @* 帯別棒グラフは画面専用（print=1 のPDFには含めない） *@
+        @* 帯別棒グラフ。月次PDF（print=1 &amp; section=monthly）では改ページ後に出力する *@
         <section class="sleep-correlation mt-4">
             <h2 class="h5 mb-1">前夜の睡眠時間と 翌日の体調</h2>
             <p class="text-muted small mb-3">前夜の睡眠を4つの帯に分け、その翌日の体調平均を比較します。</p>
@@ -683,6 +683,7 @@
             // section に応じて描画するチャートを切り替える（不在の canvas を触らない）
             if (printSection === 'monthly') {
                 createMonthlyReportChart();
+                createSleepConditionBandChart();
             } else {
                 createWeeklyReportSampleChart();
                 createWeeklyTimelineSampleChart();
@@ -1243,12 +1244,20 @@
         min-height: 0;
     }
 
-    /* 相関散布図は画面専用。PDF出力には含めない */
-    body.print-mode .sleep-correlation {
-        display: none;
+    body.print-mode .monthly-report-chart canvas {
+        max-height: 340px;
     }
 
-    body.print-mode .monthly-report-chart canvas {
+    /* 月次PDF: 帯別棒グラフは改ページしてから出力する */
+    body.print-mode .sleep-correlation {
+        page-break-before: always;
+    }
+
+    body.print-mode .sleep-correlation-chart {
+        min-height: 0;
+    }
+
+    body.print-mode .sleep-correlation-chart canvas {
         max-height: 340px;
     }
 </style>
