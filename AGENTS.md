@@ -287,17 +287,18 @@ Phycock の `scripts/deploy-samples.ps1` パターンを参考に、IIS / Azure 
 
 ## 共同開発ハーネス（Codex × Claude Code）
 
-このリポジトリは Codex と Claude Code が共同で開発する。役割分担・merge ゲート・指摘ラベルは以下のルールに従う。
+このリポジトリは Codex と Claude Code が共同で開発する。汎用ハーネス本体と Phycock 固有 profile は以下を読む。
 
-- `.claude/rules/cross-agent-review.md`
+- `.claude/rules/cross-agent-harness.md`
+- `.claude/rules/project-collaboration-profile.md`
 - `.claude/rules/handoff-protocol.md`
 
 **Codex が作業を開始するときの流れ：**
 
 1. `CLAUDE_CODE_HANDOFF.md` の最新セクションを読み、対象・完成条件・触ってよい範囲を確認する。
 2. `.agents/skills/implement-task/SKILL.md` に従い、完成条件を再確認してから実装する。
-3. 体調・睡眠・通所予定のデータでは、認可・所有者チェック・監査情報・個人情報露出をレビュー観点に含める。
-4. `dotnet build Phycock.slnx` と `dotnet test Phycock.slnx` をセルフ verify とする。
+3. `.claude/rules/project-collaboration-profile.md` の担当境界、verify、重大指摘を適用する。
+4. `dotnet build Phycock.slnx` と `dotnet test Phycock.slnx` を通常のセルフ verify とする。
 5. 実装後は `CLAUDE_CODE_HANDOFF.md` を更新し、Claude Code のレビューに戻す。
 
 **最新の引き継ぎ：** `CLAUDE_CODE_HANDOFF.md` を参照する。

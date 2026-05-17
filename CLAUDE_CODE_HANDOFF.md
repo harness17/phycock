@@ -4,9 +4,89 @@
 対象リポジトリ: `H:/ClaudeCode/Phycock`
 status: active
 
-このファイルは Codex と Claude Code の相互ハンドオフ log。書式・更新タイミングは `.claude/rules/handoff-protocol.md`、役割分担と merge ゲートは `.claude/rules/cross-agent-review.md` を参照。
+このファイルは Codex と Claude Code の相互ハンドオフ log。書式・更新タイミングは `.claude/rules/handoff-protocol.md`、汎用ハーネスは `.claude/rules/cross-agent-harness.md`、Phycock 固有 profile は `.claude/rules/project-collaboration-profile.md` を参照。
 
 既存の `CODEX_HANDOFF.md` は Codex 側の継続メモとして残し、相互依頼・レビュー・merge 判断はこのファイルに集約する。
+
+---
+
+## 2026-05-17 追記（月次統計カレンダー — Codex 実装）
+
+- 対象: `codex-schedule-activity-types`
+- 作成者: Codex
+- 主題: 統計ページの月次タブに、体調平均・気分平均・睡眠時間合計・通所予定を日別表示する月グリッドカレンダーを追加
+- 変更ファイル:
+  - 新規 `Phycock/Common/SleepStandards.cs`
+  - `Phycock/Models/StatisticsViewModels.cs`
+  - `Phycock/Service/StatisticsService.cs`
+  - `Phycock/Controllers/StatisticsController.cs`
+  - `Phycock/Views/Statistics/Index.cshtml`
+- レビュー担当: ClaudeCode
+- 触ってよい範囲: 上記統計関連ファイル
+- 触ってはいけない範囲: エンティティ、リポジトリ、マイグレーション、他コントローラー
+- セルフ verify:
+  - ⚠️ `dotnet build Phycock.slnx` は sandbox から `C:\Users\harne\AppData\Roaming\NuGet\NuGet.Config` を読めず失敗
+  - ✅ `dotnet build Phycock.slnx --no-restore` 0 error
+  - ⚠️ `dotnet test Phycock.slnx` は同じ NuGet.Config 権限で失敗
+  - ✅ `dotnet test Phycock.slnx --no-restore` 94 passed
+- 実動確認:
+  - ⚠️ in-app browser は Node REPL 実行ツールが露出しておらず未実施
+  - ⚠️ 一時 `dotnet run` のバックグラウンド起動はローカルポリシーでブロックされたため未実施
+- レビュー観点:
+  - 月次カレンダーのグリッド開始・終了が日曜開始/土曜終了になっているか
+  - `BuildDailyReport` 再利用により週次レポートと体調平均・睡眠重なり・通所判定が一致しているか
+  - 睡眠分類が `<6` / `6-7` / `7-9` / `>9` に統一され、週次チャート目安帯も 7-9h に変わっているか
+  - Admin/Member の対象ユーザー解決が既存 `ResolveTargetUserIdAsync` のまま維持されているか
+
+### 完成条件（スプリントコントラクト）
+
+- 月次タブで当月のカレンダーグリッド（日曜開始）が表示される。
+- 当月の日だけ体調・気分・睡眠・通所の色が付き、前後月セルは薄い日付のみになる。
+- 睡眠時間が 5h/6.5h/8h/10h の場合に、それぞれ不足/やや不足/適正/過剰の色へ分類される。
+- Admin は選択中 Member、Member は自分のデータのみ表示する既存ルートを流用する。
+- 記録ゼロ月でもグリッドが崩れず、記録なしは灰表示になる。
+- 週次レポート・既存月次チャート・PDF 出力の既存ルートを壊さない。
+
+### 次アクション
+
+- ClaudeCode が UI 実動確認とレビューを行う。
+
+---
+
+## 2026-05-17 追記（月次統計カレンダー — Codex 実装）
+
+- 対象: `codex-schedule-activity-types`
+- 作成者: Codex
+- 主題: 統計ページの月次タブに、体調平均・気分平均・睡眠時間合計・通所予定を日別表示する月グリッドカレンダーを追加
+- 変更ファイル:
+  - 新規 `Phycock/Common/SleepStandards.cs`
+  - `Phycock/Models/StatisticsViewModels.cs`
+  - `Phycock/Service/StatisticsService.cs`
+  - `Phycock/Controllers/StatisticsController.cs`
+  - `Phycock/Views/Statistics/Index.cshtml`
+- レビュー担当: ClaudeCode
+- 触ってよい範囲: 上記統計関連ファイル
+- 触ってはいけない範囲: エンティティ、リポジトリ、マイグレーション、他コントローラー
+- セルフ verify: ✅ `dotnet build Phycock.slnx` 0 error / ✅ `dotnet test Phycock.slnx` 94 passed
+- 実動確認: ⚠️ in-app browser は Node REPL 実行ツールが露出しておらず未実施。ローカルサーバーのバックグラウンド起動も環境ポリシーでブロック。
+- レビュー観点:
+  - 月次カレンダーのグリッド開始・終了が日曜開始/土曜終了になっているか
+  - `BuildDailyReport` 再利用により週次レポートと体調平均・睡眠重なり・通所判定が一致しているか
+  - 睡眠分類が `<6` / `6-7` / `7-9` / `>9` に統一され、週次チャート目安帯も 7-9h に変わっているか
+  - Admin/Member の対象ユーザー解決が既存 `ResolveTargetUserIdAsync` のまま維持されているか
+
+### 完成条件（スプリントコントラクト）
+
+- 月次タブで当月のカレンダーグリッド（日曜開始）が表示される。
+- 当月の日だけ体調・気分・睡眠・通所の色が付き、前後月セルは薄い日付のみになる。
+- 睡眠時間が 5h/6.5h/8h/10h の場合に、それぞれ不足/やや不足/適正/過剰の色へ分類される。
+- Admin は選択中 Member、Member は自分のデータのみ表示する既存ルートを流用する。
+- 記録ゼロ月でもグリッドが崩れず、記録なしは灰表示になる。
+- 週次レポート・既存月次チャート・PDF 出力の既存ルートを壊さない。
+
+### 次アクション
+
+- ClaudeCode が UI 実動確認とレビューを行う。
 
 ---
 
@@ -63,13 +143,60 @@ status: active
 
 ---
 
+## 2026-05-17 00:45 追記（共同開発ハーネスの汎用化 — Codex 作成）
+
+- 対象: current worktree
+- 作成者: Codex
+- 主題: Phycock 直書きだった共同開発ハーネスを、汎用本体と Phycock profile に分離
+- 変更ファイル:
+  - `.claude/rules/cross-agent-harness.md`
+  - `.claude/rules/project-collaboration-profile.md`
+  - `.claude/rules/handoff-protocol.md`
+  - `.claude/skills/codex-handoff/SKILL.md`
+  - `.claude/skills/cross-review/SKILL.md`
+  - `.agents/skills/implement-task/SKILL.md`
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - `CLAUDE_CODE_HANDOFF.md`
+- レビュー担当: ClaudeCode
+- 触ってよい範囲: ハーネス文書・ルール・スキルのみ
+- 触ってはいけない範囲: アプリ本体、既存未コミット変更
+- セルフ verify: ✅ 旧参照 grep と汎用本体の Phycock 固有語混入 grep を確認済み
+- 実動確認: N/A（ドキュメントのみ）
+- レビュー観点:
+  - `cross-agent-harness.md` がプロジェクト非依存の本体として使えるか
+  - Phycock 固有情報が `project-collaboration-profile.md` に分離されているか
+  - 各 skill が hard-coded な Phycock 前提ではなく、project profile を参照しているか
+
+### 完成条件（スプリントコントラクト）
+
+- 汎用本体は別プロジェクトへコピーしても使える。
+- プロジェクト固有の担当境界・verify・重大指摘は profile に閉じている。
+- Phycock の `AGENTS.md` / `CLAUDE.md` は汎用本体と profile の両方へ誘導する。
+- 既存 handoff の意味を壊さない。
+- アプリ本体の既存変更には触れない。
+
+### 次アクション
+
+- ClaudeCode が必要に応じて `/cross-review` 相当で、汎用本体と Phycock profile の分離が妥当か確認する。
+
+### 試運転結果（2026-05-17, Codex）
+
+- `cross-agent-harness.md` と `project-collaboration-profile.md` を読み込み、汎用本体と Phycock 固有 profile の分離を確認。
+- `rg` で `AGENTS.md` / `CLAUDE.md` / `.claude` / `.agents` / `CLAUDE_CODE_HANDOFF.md` の参照を確認し、旧 `cross-agent-review.md` への有効参照は残っていない。
+- `codex-handoff` / `cross-review` / `implement-task` は project profile を優先する導線になっている。
+- アプリ本体変更はなし。ドキュメントのみのため `dotnet build/test` は実行対象外。
+
+---
+
 ## 2026-05-16 21:00 追記（ClaudeCode 連携ハーネス導入 — Codex 作成）
 
 - 対象: current worktree
 - 作成者: Codex
 - 主題: YouTom / 技術記事プロジェクトと同じ相互レビュー型ハーネスを Phycock 用に導入
 - 変更ファイル:
-  - `.claude/rules/cross-agent-review.md`
+  - `.claude/rules/cross-agent-harness.md`
+  - `.claude/rules/project-collaboration-profile.md`
   - `.claude/rules/handoff-protocol.md`
   - `.claude/skills/codex-handoff/SKILL.md`
   - `.claude/skills/cross-review/SKILL.md`

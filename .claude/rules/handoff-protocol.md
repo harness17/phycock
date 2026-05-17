@@ -1,12 +1,12 @@
-# Handoff Protocol ルール（Phycock 共同開発）
+# Handoff Protocol
 
-Codex / Claude Code 間のハンドオフ運用ルール。グローバルの handoff ルールを Phycock 固有に具体化する。
+Codex / Claude Code 間のハンドオフ運用ルール。プロジェクト非依存の書式として扱い、プロジェクト固有の verify・レビュー観点・担当境界は `project-collaboration-profile.md` で定義する。
 
 ## ファイル
 
 `CLAUDE_CODE_HANDOFF.md`（リポジトリ直下、単一ファイル追記式）
 
-既存の `CODEX_HANDOFF.md` は Codex 側の継続メモとして残す。Claude Code と Codex の相互依頼・レビュー・merge ゲートは `CLAUDE_CODE_HANDOFF.md` に集約する。
+既存の `CODEX_HANDOFF.md` などローカル継続メモがある場合も、Claude Code と Codex の相互依頼・レビュー・merge ゲートは `CLAUDE_CODE_HANDOFF.md` に集約する。
 
 ## セクション書式
 
@@ -22,7 +22,7 @@ Codex / Claude Code 間のハンドオフ運用ルール。グローバルの ha
 - レビュー担当: <反対側>
 - 触ってよい範囲: <files>
 - 触ってはいけない範囲: <files または none>
-- セルフ verify: ✅/❌ (`dotnet build Phycock.slnx` / `dotnet test Phycock.slnx`)
+- セルフ verify: ✅/❌ (<project profile の verify コマンド>)
 - 実動確認: ✅/❌/N/A
 - レビュー観点:
   - <観点1>
@@ -33,6 +33,7 @@ Codex / Claude Code 間のハンドオフ運用ルール。グローバルの ha
 - <認可・利用前提>
 - <エラー処理>
 - <非回帰確認>
+- <verify コマンド>
 
 ### レビュー結果（YYYY-MM-DD, レビュー側）
 - 公開可否: 良好 / 修正必須 / 軽微指摘あり
