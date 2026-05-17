@@ -303,6 +303,14 @@ Phycock の `scripts/deploy-samples.ps1` パターンを参考に、IIS / Azure 
 
 **最新の引き継ぎ：** `CLAUDE_CODE_HANDOFF.md` を参照する。
 
+## ハンドオフ定期メンテナンス
+
+セッション開始時、コンテキストの `currentDate` を見て、今日が**月初（その月の 1〜3 日）**なら、ユーザーに「`/handoff-cleanup` でハンドオフを整理しましょうか」と **一度だけ** 提案する。
+
+- 月初でなければ何もしない（毎セッション催促しない）。
+- 整理対象・アーカイブ閾値はグローバルルール `handoff-archive.md` に従う。
+- アーカイブ先は `docs/handoffs/archive/YYYY-QN.md`。
+
 ## 進捗同期（My-Skill-Graph）
 
 このプロジェクトの開発進捗は、ユーザーの My-Skill-Graph ナレッジシステムと自動同期されます。
