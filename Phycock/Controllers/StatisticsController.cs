@@ -1,8 +1,6 @@
 using Dev.CommonLibrary.Attributes;
 using Dev.CommonLibrary.Common;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Mvc;
 using Phycock.Models;
 using Phycock.Service;
@@ -23,19 +21,16 @@ namespace Phycock.Controllers
         private readonly StatisticsService _service;
         private readonly UserManagementService _userManagementService;
         private readonly PdfExportService _pdfExportService;
-        private readonly IServer _server;
         private readonly Logger _logger = Logger.GetLogger();
 
         public StatisticsController(
             StatisticsService service,
             UserManagementService userManagementService,
-            PdfExportService pdfExportService,
-            IServer server)
+            PdfExportService pdfExportService)
         {
             _service = service;
             _userManagementService = userManagementService;
             _pdfExportService = pdfExportService;
-            _server = server;
         }
 
         [HttpGet]
@@ -122,20 +117,14 @@ namespace Phycock.Controllers
             {
                 var ws = NormalizeWeekStart(weekStart).ToString("yyyy-MM-dd");
 
-                // ループバック用の内部URL（IServerAddressesFeature から取得し、ハードコードを避ける）
-                var addresses = _server.Features.Get<IServerAddressesFeature>()?.Addresses;
-                var baseUrl = addresses?.FirstOrDefault(a => a.StartsWith("http://"))
-                              ?? addresses?.FirstOrDefault();
-                if (string.IsNullOrEmpty(baseUrl))
-                {
-                    _logger.Error(new LogModel("PDF出力: サーバーアドレスが取得できません。"));
-                    return StatusCode(StatusCodes.Status500InternalServerError, "サーバー設定エラーが発生しました。");
-                }
-
-                var url = $"{baseUrl.TrimEnd('/')}/Statistics?print=1&weekStart={ws}";
+                // ループバック用の内部URL。IIS in-process では IServerAddressesFeature が
+                // ワイルドカードホスト（http://*:80 等）を返し Uri 解析に失敗するため、
+                // また PathBase を含めないとサブアプリ配置で 404 になるため、現リクエストから組み立てる。
+                var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
+                var url = $"{Request.Scheme}://{Request.Host}{pathBase}/Statistics?print=1&weekStart={ws}";
 
                 // 現リクエストの認証クッキーを Playwright 用に変換（ループバックなので Secure=false）
-                var host = new Uri(baseUrl).Host;
+                var host = Request.Host.Host;
                 var pwCookies = Request.Cookies.Select(c => new PWCookie
                 {
                     Name = c.Key,
