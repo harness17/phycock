@@ -155,7 +155,73 @@ namespace Phycock.Service
             }
 
             FillReportChart(calendar.ReportChart, inMonthDays);
+            calendar.SleepConditionByBand = BuildSleepConditionByBand(inMonthDays);
             return calendar;
+        }
+
+        /// <summary>睡眠4帯の定義（不足→過剰の固定順）。</summary>
+        private static readonly (SleepLevel Level, string Label)[] SleepBandDefs =
+        {
+            (SleepLevel.Insufficient,  "不足 (〜6h)"),
+            (SleepLevel.SlightlyShort, "やや不足 (6-7h)"),
+            (SleepLevel.Adequate,      "適正 (7-9h)"),
+            (SleepLevel.Excessive,     "過剰 (9h〜)")
+        };
+
+        /// <summary>
+        /// 前夜の睡眠時間帯ごとの「翌日の体調平均」を構築する。
+        /// 前夜の睡眠を4帯に分け、各帯の翌日の体調平均を集計する。
+        /// 月初日は前夜データが無いため除外。体調記録の無い日・前夜睡眠記録の無い日も除外。
+        /// </summary>
+        private static SleepConditionByBandDto BuildSleepConditionByBand(List<DailyReportDto> inMonthDays)
+        {
+            var conditionsByLevel = new Dictionary<SleepLevel, List<double>>
+            {
+                [SleepLevel.Insufficient] = new(),
+                [SleepLevel.SlightlyShort] = new(),
+                [SleepLevel.Adequate] = new(),
+                [SleepLevel.Excessive] = new()
+            };
+
+            for (var i = 1; i < inMonthDays.Count; i++)
+            {
+                var prev = inMonthDays[i - 1];
+                var current = inMonthDays[i];
+                var prevSleep = Math.Round(prev.NightSleepHours + prev.OtherSleepHours, 2);
+
+                // 前夜の睡眠記録が無い／当日の体調記録が無いペアは除外
+                if (prevSleep <= 0 || current.ConditionAvg is not double condition) continue;
+
+                var level = SleepStandards.Classify(prevSleep);
+                if (conditionsByLevel.TryGetValue(level, out var list)) list.Add(condition);
+            }
+
+            var dto = new SleepConditionByBandDto();
+            foreach (var (level, label) in SleepBandDefs)
+            {
+                var conds = conditionsByLevel[level];
+                dto.Bands.Add(new SleepBandStatDto
+                {
+                    Level = level,
+                    Label = label,
+                    DayCount = conds.Count,
+                    AverageCondition = conds.Count > 0 ? Math.Round(conds.Average(), 2) : null
+                });
+            }
+            dto.TotalDayCount = dto.Bands.Sum(b => b.DayCount);
+
+            // 要約：体調平均が集計できた帯が2つ以上あれば、最高帯と最低帯を1文で示す
+            var measured = dto.Bands.Where(b => b.AverageCondition is not null).ToList();
+            if (measured.Count >= 2)
+            {
+                var best = measured.MaxBy(b => b.AverageCondition)!;
+                var worst = measured.MinBy(b => b.AverageCondition)!;
+                dto.LeadText = best.Level == worst.Level
+                    ? "集計できた帯では翌日の体調平均に大きな差は見られません。"
+                    : $"前夜が「{best.Label}」の翌日は体調平均 {best.AverageCondition:0.0} で最も高く、"
+                      + $"「{worst.Label}」の翌日は {worst.AverageCondition:0.0} で最も低い傾向です。";
+            }
+            return dto;
         }
 
         private static DailyReportDto BuildDailyReport(

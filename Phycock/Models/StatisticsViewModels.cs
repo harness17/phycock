@@ -35,6 +35,41 @@ namespace Phycock.Models
 
         /// <summary>月次チャート（体調・気分・睡眠内訳）。週次レポートと同仕様。</summary>
         public WeeklyReportChartDto ReportChart { get; set; } = new();
+
+        /// <summary>前夜の睡眠時間帯ごとの「翌日の体調平均」（帯別棒グラフ用）。</summary>
+        public SleepConditionByBandDto SleepConditionByBand { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 前夜の睡眠時間帯ごとの「翌日の体調平均」（帯別棒グラフ用）。
+    /// 前夜の睡眠を4帯（不足／やや不足／適正／過剰）に分け、各帯の翌日の体調平均を集計する。
+    /// </summary>
+    public class SleepConditionByBandDto
+    {
+        /// <summary>睡眠4帯の集計（不足→過剰の固定順）。</summary>
+        public List<SleepBandStatDto> Bands { get; set; } = new();
+
+        /// <summary>集計対象の日数（前夜睡眠＋当日体調が揃った日の合計）。</summary>
+        public int TotalDayCount { get; set; }
+
+        /// <summary>傾向を1文で示す要約。集計可能な帯が2つ未満のときは null。</summary>
+        public string? LeadText { get; set; }
+    }
+
+    /// <summary>睡眠1帯の集計。</summary>
+    public class SleepBandStatDto
+    {
+        /// <summary>睡眠レベル（帯の区分）。</summary>
+        public SleepLevel Level { get; set; }
+
+        /// <summary>帯の表示ラベル（例「不足 (〜6h)」）。</summary>
+        public string Label { get; set; } = "";
+
+        /// <summary>この帯の翌日の体調平均。該当日が無いときは null。</summary>
+        public double? AverageCondition { get; set; }
+
+        /// <summary>この帯に該当した日数。</summary>
+        public int DayCount { get; set; }
     }
 
     /// <summary>月次カレンダーの1日セル DTO。</summary>

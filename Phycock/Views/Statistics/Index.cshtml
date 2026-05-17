@@ -269,6 +269,26 @@
                 <span>背景の黄色帯: 正常な睡眠時間の目安（7-9時間）</span>
             </div>
         </section>
+
+        @* 帯別棒グラフは画面専用（print=1 のPDFには含めない） *@
+        <section class="sleep-correlation mt-4">
+            <h2 class="h5 mb-1">前夜の睡眠時間と 翌日の体調</h2>
+            <p class="text-muted small mb-3">前夜の睡眠を4つの帯に分け、その翌日の体調平均を比較します。</p>
+            @if (monthlyCalendar.SleepConditionByBand.LeadText is null)
+            {
+                <p class="text-muted small mb-0">傾向を集計するにはデータが不足しています（体調記録と前夜の睡眠記録が揃った日が、複数の睡眠帯にまたがって必要です）。</p>
+            }
+            else
+            {
+                <div class="sleep-correlation-chart">
+                    <canvas id="sleepConditionBandChart"></canvas>
+                </div>
+                <div class="correlation-lead mt-3">@monthlyCalendar.SleepConditionByBand.LeadText</div>
+                <div class="correlation-note mt-3">
+                    ※ これは平均の比較であり、因果関係を保証するものではありません。日数の少ない帯は平均が不安定です。支援の判断材料の一つとしてご利用ください。
+                </div>
+            }
+        </section>
     </div>
     }
 </div>
@@ -283,6 +303,7 @@
         const reportChartData = @Html.Raw(Json.Serialize(report.ReportChart));
         const timelineChartData = @Html.Raw(Json.Serialize(report.TimelineChart));
         const monthlyReportChartData = @Html.Raw(Json.Serialize(Model.MonthlyCalendar.ReportChart));
+        const sleepConditionByBand = @Html.Raw(Json.Serialize(Model.MonthlyCalendar.SleepConditionByBand));
         const monthlyWeekStartOffset = @monthlyWeekStartOffset;
         let weeklyReportSampleChart;
         let monthlyReportChart;
@@ -446,6 +467,57 @@
                 data: data,
                 options: options,
                 plugins: [sleepTargetBandPlugin]
+            });
+        }
+
+        // 前夜の睡眠帯ごとの「翌日の体調平均」棒グラフ（画面専用）
+        function createSleepConditionBandChart() {
+            const canvas = document.getElementById('sleepConditionBandChart');
+            // データ不足の月は canvas 自体が描画されない
+            if (!canvas) return;
+
+            const bands = sleepConditionByBand.bands;
+            // 帯は 不足 → やや不足 → 適正 → 過剰 の固定順。睡眠4段階の色と統一。
+            const bandColors = [
+                { bg: '#f8d7da', border: '#dc3545' },
+                { bg: '#fff3cd', border: '#ffc107' },
+                { bg: '#d1e7dd', border: '#198754' },
+                { bg: '#cfe2ff', border: '#0d6efd' }
+            ];
+
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: bands.map(b => b.label),
+                    datasets: [{
+                        label: '翌日の体調平均',
+                        data: bands.map(b => b.averageCondition),
+                        backgroundColor: bands.map((b, i) => bandColors[i].bg),
+                        borderColor: bands.map((b, i) => bandColors[i].border),
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: c => {
+                                    const b = bands[c.dataIndex];
+                                    return b.averageCondition === null
+                                        ? 'データなし'
+                                        : `翌日の体調平均 ${b.averageCondition.toFixed(1)}（対象 ${b.dayCount} 日）`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: '前夜の睡眠時間帯' } },
+                        y: { title: { display: true, text: '翌日の体調平均スコア' }, min: 1, max: 5 }
+                    }
+                }
             });
         }
 
@@ -637,6 +709,7 @@
             createWeeklyReportSampleChart();
             createWeeklyTimelineSampleChart();
             createMonthlyReportChart();
+            createSleepConditionBandChart();
         }
     </script>
 }
@@ -1035,6 +1108,40 @@
         color: #495057;
     }
 
+    .sleep-correlation {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #fff;
+    }
+
+    .sleep-correlation-chart {
+        position: relative;
+        height: 360px;
+    }
+
+    .sleep-correlation-chart canvas {
+        max-width: 100% !important;
+    }
+
+    .correlation-lead {
+        background: #e7f1ff;
+        border: 1px solid #9ec5fe;
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+        color: #084298;
+    }
+
+    .correlation-note {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.8rem;
+        color: #664d03;
+    }
+
     .weekly-timeline-chart {
         position: relative;
         height: 360px;
@@ -1134,6 +1241,11 @@
 
     body.print-mode .monthly-report-chart {
         min-height: 0;
+    }
+
+    /* 相関散布図は画面専用。PDF出力には含めない */
+    body.print-mode .sleep-correlation {
+        display: none;
     }
 
     body.print-mode .monthly-report-chart canvas {
