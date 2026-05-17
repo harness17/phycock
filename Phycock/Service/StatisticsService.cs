@@ -145,6 +145,9 @@ namespace Phycock.Service
                 Month = month
             };
 
+            // チャート用：当月内の日別集計（週次レポートチャートと同仕様）
+            var inMonthDays = new List<DailyReportDto>();
+
             for (var day = gridStart; day <= gridEnd; day = day.AddDays(1))
             {
                 var inMonth = day >= monthStart && day <= monthEnd;
@@ -152,6 +155,8 @@ namespace Phycock.Service
                     ? BuildDailyReport(day, healthRecords, sleepRecords, scheduleEntries)
                     : new DailyReportDto { Date = day };
                 var sleepTotal = Math.Round(daily.NightSleepHours + daily.OtherSleepHours, 2);
+
+                if (inMonth) inMonthDays.Add(daily);
 
                 calendar.Cells.Add(new MonthlyDayCellDto
                 {
@@ -168,6 +173,7 @@ namespace Phycock.Service
                 });
             }
 
+            FillReportChart(calendar.ReportChart, inMonthDays);
             return calendar;
         }
 
@@ -341,14 +347,18 @@ namespace Phycock.Service
 
         /// <summary>上部チャート用の系列データを Days から構築する。</summary>
         private static void BuildReportChart(WeeklyReportDto report)
+            => FillReportChart(report.ReportChart, report.Days);
+
+        /// <summary>日別集計から複合チャート用データ（体調・気分・睡眠内訳）を構築する。週次・月次共用。</summary>
+        private static void FillReportChart(WeeklyReportChartDto chart, IEnumerable<DailyReportDto> days)
         {
-            foreach (var d in report.Days)
+            foreach (var d in days)
             {
-                report.ReportChart.Labels.Add($"{d.Date.Month}/{d.Date.Day}");
-                report.ReportChart.Condition.Add(d.ConditionAvg);
-                report.ReportChart.Feeling.Add(d.FeelingAvg);
-                report.ReportChart.NightSleep.Add(d.NightSleepHours);
-                report.ReportChart.OtherSleep.Add(d.OtherSleepHours);
+                chart.Labels.Add($"{d.Date.Month}/{d.Date.Day}");
+                chart.Condition.Add(d.ConditionAvg);
+                chart.Feeling.Add(d.FeelingAvg);
+                chart.NightSleep.Add(d.NightSleepHours);
+                chart.OtherSleep.Add(d.OtherSleepHours);
             }
         }
 

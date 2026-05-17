@@ -240,9 +240,14 @@
         </section>
 
         <section class="monthly-chart">
-            <div>
-                <h2 class="h5 mb-3">月次 体調・気分</h2>
-                <canvas id="monthlyHealthChart" height="120"></canvas>
+            <h2 class="h5 mb-1">月次 体調・気分・睡眠</h2>
+            <p class="text-muted small mb-3">体調・気分の推移と睡眠内訳を月単位で確認します。</p>
+            <div class="monthly-report-chart">
+                <canvas id="monthlyReportChart"></canvas>
+            </div>
+            <div class="chart-guide mt-2">
+                <span class="sleep-target-swatch"></span>
+                <span>背景の黄色帯: 正常な睡眠時間の目安（7-9時間）</span>
             </div>
         </section>
     </div>
@@ -257,27 +262,9 @@
         // サーバー側（DBデータ）から注入するチャート用データ
         const reportChartData = @Html.Raw(Json.Serialize(report.ReportChart));
         const timelineChartData = @Html.Raw(Json.Serialize(report.TimelineChart));
-        let monthlyHealthChart;
+        const monthlyReportChartData = @Html.Raw(Json.Serialize(Model.MonthlyCalendar.ReportChart));
         let weeklyReportSampleChart;
-        const statisticsUrls = {
-            healthMonthly: '@Url.Action("GetHealthMonthly", "Statistics")'
-        };
-
-        function createOrUpdateLineChart(chart, canvasId, labels, conditionData, feelingData) {
-            const data = {
-                labels: labels,
-                datasets: [
-                    { label: '体調', data: conditionData, borderColor: '#0d6efd', backgroundColor: '#0d6efd', tension: 0.25 },
-                    { label: '気分', data: feelingData, borderColor: '#F59F00', backgroundColor: '#F59F00', tension: 0.25 }
-                ]
-            };
-            if (chart) {
-                chart.data = data;
-                chart.update();
-                return chart;
-            }
-            return new Chart(document.getElementById(canvasId), { type: 'line', data: data });
-        }
+        let monthlyReportChart;
 
         const sleepTargetBandPlugin = {
             id: 'sleepTargetBand',
@@ -306,14 +293,15 @@
             }
         };
 
-        function createWeeklyReportSampleChart() {
+        // 週次・月次共用の複合チャート設定（棒=睡眠内訳 / 折れ線=体調・気分）
+        function reportChartConfig(chartData) {
             const data = {
-                labels: reportChartData.labels,
+                labels: chartData.labels,
                 datasets: [
                     {
                         type: 'bar',
                         label: '本睡眠',
-                        data: reportChartData.nightSleep,
+                        data: chartData.nightSleep,
                         backgroundColor: '#5B7CFA',
                         order: 3,
                         borderRadius: 4,
@@ -323,7 +311,7 @@
                     {
                         type: 'bar',
                         label: '他睡眠',
-                        data: reportChartData.otherSleep,
+                        data: chartData.otherSleep,
                         backgroundColor: '#8DD7BF',
                         order: 3,
                         borderRadius: 4,
@@ -333,7 +321,7 @@
                     {
                         type: 'line',
                         label: '体調',
-                        data: reportChartData.condition,
+                        data: chartData.condition,
                         borderColor: '#E05D44',
                         backgroundColor: '#E05D44',
                         borderWidth: 3,
@@ -347,7 +335,7 @@
                     {
                         type: 'line',
                         label: '気分',
-                        data: reportChartData.feeling,
+                        data: chartData.feeling,
                         borderColor: '#F59F00',
                         backgroundColor: '#F59F00',
                         borderDash: [6, 3],
@@ -405,6 +393,11 @@
                 }
             };
 
+            return { data, options };
+        }
+
+        function createWeeklyReportSampleChart() {
+            const { data, options } = reportChartConfig(reportChartData);
             if (weeklyReportSampleChart) {
                 weeklyReportSampleChart.data = data;
                 weeklyReportSampleChart.options = options;
@@ -419,16 +412,12 @@
             });
         }
 
-        function loadStats() {
-            const weekStart = $('#weekStart').val();
-            const date = new Date(weekStart + 'T00:00:00');
-            $.get(statisticsUrls.healthMonthly, { year: date.getFullYear(), month: date.getMonth() + 1 }, function (data) {
-                monthlyHealthChart = createOrUpdateLineChart(
-                    monthlyHealthChart,
-                    'monthlyHealthChart',
-                    data.labels,
-                    data.conditionData,
-                    data.feelingData);
+        function createMonthlyReportChart() {
+            const { data, options } = reportChartConfig(monthlyReportChartData);
+            monthlyReportChart = new Chart(document.getElementById('monthlyReportChart'), {
+                data: data,
+                options: options,
+                plugins: [sleepTargetBandPlugin]
             });
         }
 
@@ -610,7 +599,7 @@
             });
             createWeeklyReportSampleChart();
             createWeeklyTimelineSampleChart();
-            loadStats();
+            createMonthlyReportChart();
         }
     </script>
 }
@@ -833,6 +822,16 @@
         border-radius: 8px;
         padding: 1rem;
         background: #fff;
+    }
+
+    /* 月次チャート枠：明示的な高さで maintainAspectRatio:false と組み合わせる */
+    .monthly-report-chart {
+        position: relative;
+        height: 340px;
+    }
+
+    .monthly-report-chart canvas {
+        max-width: 100% !important;
     }
 
     .monthly-calendar-grid {

@@ -32,6 +32,9 @@ namespace Phycock.Models
         public int Year { get; set; }
         public int Month { get; set; }
         public List<MonthlyDayCellDto> Cells { get; set; } = new();
+
+        /// <summary>月次チャート（体調・気分・睡眠内訳）。週次レポートと同仕様。</summary>
+        public WeeklyReportChartDto ReportChart { get; set; } = new();
     }
 
     /// <summary>月次カレンダーの1日セル DTO。</summary>
