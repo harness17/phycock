@@ -221,10 +221,10 @@ namespace Phycock.Service
                 Id = entity.Id.ToString(),
                 Title = primaryText,
                 Start = entity.RecordDate.ToString("yyyy-MM-dd"),
-                Color = color,
-                BackgroundColor = color,
-                BorderColor = GetConditionBorderColor(entity.Condition),
-                TextColor = "#FFFFFF",
+                Color = color.BackgroundColor,
+                BackgroundColor = color.BackgroundColor,
+                BorderColor = color.BorderColor,
+                TextColor = color.TextColor,
                 ExtendedProps = new CalendarEventExtendedProps
                 {
                     PrimaryText = primaryText,
@@ -248,31 +248,24 @@ namespace Phycock.Service
             };
         }
 
-        private static string GetConditionColor(ConditionLevel condition)
+        /// <summary>
+        /// 体調レベルの表示色を返す。
+        /// 睡眠記録・通所スケジュールと同じ「淡いパステル背景＋彩度のあるボーダー＋濃い文字色」方針。
+        /// </summary>
+        private static HealthRecordColor GetConditionColor(ConditionLevel condition)
         {
             return condition switch
             {
-                ConditionLevel.VeryGood => "#198754",
-                ConditionLevel.Good => "#20c997",
-                ConditionLevel.Normal => "#0d6efd",
-                ConditionLevel.Bad => "#fd7e14",
-                ConditionLevel.VeryBad => "#dc3545",
-                _ => "#6c757d",
+                ConditionLevel.VeryGood => new("#D1E7DD", "#198754", "#0F5132"),
+                ConditionLevel.Good => new("#D2F4EA", "#20C997", "#0B4F3A"),
+                ConditionLevel.Normal => new("#D8EAF7", "#2874A6", "#1B4F72"),
+                ConditionLevel.Bad => new("#FCE4D6", "#FD7E14", "#7A3E0A"),
+                ConditionLevel.VeryBad => new("#F8D7DA", "#DC3545", "#842029"),
+                _ => new("#E9ECEF", "#6C757D", "#343A40"),
             };
         }
 
-        private static string GetConditionBorderColor(ConditionLevel condition)
-        {
-            return condition switch
-            {
-                ConditionLevel.VeryGood => "#0F5132",
-                ConditionLevel.Good => "#087990",
-                ConditionLevel.Normal => "#084298",
-                ConditionLevel.Bad => "#984C0C",
-                ConditionLevel.VeryBad => "#842029",
-                _ => "#495057",
-            };
-        }
+        private sealed record HealthRecordColor(string BackgroundColor, string BorderColor, string TextColor);
 
         private HealthRecordFormViewModel ToFormViewModel(HealthRecordEntity entity)
         {
