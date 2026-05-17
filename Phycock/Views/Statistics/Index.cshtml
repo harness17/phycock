@@ -203,31 +203,40 @@
                     <div role="columnheader">土</div>
                 </div>
                 <div class="monthly-days" role="rowgroup">
-                    @foreach (var cell in monthlyCalendar.Cells)
+                    @{ var weekIndex = 0; }
+                    @foreach (var week in monthlyCalendar.Cells.Chunk(7))
                     {
-                        var sleepClass = $"sleep-{cell.SleepLevel.ToString().ToLowerInvariant()}";
-                        var scheduleClass = $"schedule-{cell.ScheduleDayClass}";
-                        <div class="monthly-day @(cell.InMonth ? "" : "outside-month")" role="cell">
-                            <div class="monthly-day-number">@cell.Date.Day</div>
-                            @if (cell.InMonth)
+                        // 3週ごとに改ページ（PDF出力時に週行が途中で切れないようにする）
+                        var weekBreak = weekIndex > 0 && weekIndex % 3 == 0 ? " monthly-week-break" : "";
+                        <div class="monthly-week@(weekBreak)" role="row">
+                            @foreach (var cell in week)
                             {
-                                <div class="monthly-metrics">
-                                    <span class="monthly-metric @ScoreClass(cell.ConditionAvg)">
-                                        <span>体調</span>
-                                        <strong>@(cell.ConditionAvg?.ToString("0.0") ?? "-")</strong>
-                                    </span>
-                                    <span class="monthly-metric @ScoreClass(cell.FeelingAvg)">
-                                        <span>気分</span>
-                                        <strong>@(cell.FeelingAvg?.ToString("0.0") ?? "-")</strong>
-                                    </span>
-                                    <span class="monthly-metric @sleepClass">
-                                        <span>睡眠</span>
-                                        <strong>@($"{cell.SleepTotalHours:0.0}h")</strong>
-                                    </span>
-                                    <span class="monthly-schedule-chip @scheduleClass">@cell.ScheduleSummary</span>
+                                var sleepClass = $"sleep-{cell.SleepLevel.ToString().ToLowerInvariant()}";
+                                var scheduleClass = $"schedule-{cell.ScheduleDayClass}";
+                                <div class="monthly-day @(cell.InMonth ? "" : "outside-month")" role="cell">
+                                    <div class="monthly-day-number">@cell.Date.Day</div>
+                                    @if (cell.InMonth)
+                                    {
+                                        <div class="monthly-metrics">
+                                            <span class="monthly-metric @ScoreClass(cell.ConditionAvg)">
+                                                <span>体調</span>
+                                                <strong>@(cell.ConditionAvg?.ToString("0.0") ?? "-")</strong>
+                                            </span>
+                                            <span class="monthly-metric @ScoreClass(cell.FeelingAvg)">
+                                                <span>気分</span>
+                                                <strong>@(cell.FeelingAvg?.ToString("0.0") ?? "-")</strong>
+                                            </span>
+                                            <span class="monthly-metric @sleepClass">
+                                                <span>睡眠</span>
+                                                <strong>@($"{cell.SleepTotalHours:0.0}h")</strong>
+                                            </span>
+                                            <span class="monthly-schedule-chip @scheduleClass">@cell.ScheduleSummary</span>
+                                        </div>
+                                    }
                                 </div>
                             }
                         </div>
+                        weekIndex++;
                     }
                 </div>
             </div>
@@ -856,7 +865,7 @@
     }
 
     .monthly-weekdays,
-    .monthly-days {
+    .monthly-week {
         display: grid;
         grid-template-columns: repeat(7, minmax(104px, 1fr));
     }
@@ -880,7 +889,7 @@
         word-break: break-word;
     }
 
-    .monthly-day:nth-child(7n + 1) {
+    .monthly-week .monthly-day:first-child {
         border-left: 1px solid #dee2e6;
     }
 
@@ -1098,8 +1107,18 @@
         page-break-before: always;
     }
 
-    body.print-mode .monthly-calendar {
+    /* 月次PDF: 週行が途中で切れないようにし、3週ごとに改ページ */
+    body.print-mode .monthly-week {
         page-break-inside: avoid;
+    }
+
+    body.print-mode .monthly-week-break {
+        page-break-before: always;
+    }
+
+    /* 改ページ後の週行はヘッダーが無いので上罫線を付ける */
+    body.print-mode .monthly-week-break .monthly-day {
+        border-top: 1px solid #dee2e6;
     }
 
     body.print-mode .monthly-report-chart {
