@@ -1,0 +1,189 @@
+@{
+    ViewData["Title"] = "カレンダー";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h3 mb-0">カレンダー</h1>
+    <div class="d-flex flex-wrap gap-3">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggleHealth" data-source="health" checked>
+            <label class="form-check-label" for="toggleHealth">体調記録</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggleSleep" data-source="sleep" checked>
+            <label class="form-check-label" for="toggleSleep">睡眠記録</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggleSchedule" data-source="schedule" checked>
+            <label class="form-check-label" for="toggleSchedule">通所スケジュール</label>
+        </div>
+    </div>
+</div>
+
+<div id="unifiedCalendar" class="record-calendar"></div>
+
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailModalTitle">詳細</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script>
+        const calendarSources = {
+            health: { label: '体調記録', url: '@Url.Action("GetEvents", "HealthRecord")' },
+            sleep: { label: '睡眠記録', url: '@Url.Action("GetEvents", "SleepRecord")' },
+            schedule: { label: '通所スケジュール', url: '@Url.Action("GetEvents", "ScheduleEntry")' }
+        };
+
+        // 体調記録の並び順キー（サーバーが付与する SortOrder＝タイミング識別子）
+        const SORT_WAKE = 360;        // 起床時
+        const SORT_TRAIN_START = 510; // 訓練開始時
+        const SORT_TRAIN_END = 945;   // 訓練終了時
+        const SORT_BEDTIME = 1439;    // 就眠時
+
+        function dateKey(start) {
+            return (start || '').substring(0, 10);
+        }
+
+        // ISO 日時文字列（例: 2026-05-18T14:00:00）から当日の経過分を取得する
+        function minutesOfDay(iso) {
+            if (!iso || iso.length < 16) return 0;
+            return parseInt(iso.substring(11, 13), 10) * 60 + parseInt(iso.substring(14, 16), 10);
+        }
+
+        function tagEvents(list, category) {
+            (list || []).forEach(function (e) {
+                e.extendedProps = e.extendedProps || {};
+                e.extendedProps.category = category;
+            });
+            return list || [];
+        }
+
+        // 3種のイベントを取得・マージし、1日ごとに並び順キー order を計算する
+        function buildEvents(fetchInfo, success, failure) {
+            const params = { start: fetchInfo.startStr, end: fetchInfo.endStr };
+            $.when(
+                $.get(calendarSources.health.url, params),
+                $.get(calendarSources.sleep.url, params),
+                $.get(calendarSources.schedule.url, params)
+            ).done(function (health, sleep, schedule) {
+                let merged = [];
+                if (document.getElementById('toggleHealth').checked) merged = merged.concat(tagEvents(health[0], 'health'));
+                if (document.getElementById('toggleSleep').checked) merged = merged.concat(tagEvents(sleep[0], 'sleep'));
+                if (document.getElementById('toggleSchedule').checked) merged = merged.concat(tagEvents(schedule[0], 'schedule'));
+
+                assignOrder(merged);
+                // 終日イベントと時刻ありイベントが混在すると並び替えできないため全て終日扱いに統一する
+                merged.forEach(function (e) { e.allDay = true; e.end = null; });
+                success(merged);
+            }).fail(function () { failure(); });
+        }
+
+        // 訓練開始時／終了時はその日の実際の通所予定に連動させる（固定時刻ではない）
+        function assignOrder(events) {
+            const byDate = {};
+            events.forEach(function (e) {
+                const key = dateKey(e.start);
+                (byDate[key] || (byDate[key] = [])).push(e);
+            });
+
+            Object.keys(byDate).forEach(function (key) {
+                const group = byDate[key];
+                let minStart = null, maxEnd = null;
+                group.forEach(function (e) {
+                    if (!e.extendedProps || e.extendedProps.category !== 'schedule') return;
+                    const st = minutesOfDay(e.start);
+                    const en = e.end ? minutesOfDay(e.end) : st;
+                    if (minStart === null || st < minStart) minStart = st;
+                    if (maxEnd === null || en > maxEnd) maxEnd = en;
+                });
+
+                group.forEach(function (e) {
+                    const category = e.extendedProps ? e.extendedProps.category : null;
+                    const so = (e.extendedProps && typeof e.extendedProps.sortOrder === 'number')
+                        ? e.extendedProps.sortOrder : 0;
+                    if (category === 'health') {
+                        if (so === SORT_TRAIN_START) e.order = (minStart !== null ? minStart - 1 : SORT_TRAIN_START);
+                        else if (so === SORT_TRAIN_END) e.order = (maxEnd !== null ? maxEnd + 1 : SORT_TRAIN_END);
+                        else if (so === SORT_BEDTIME) e.order = 100000;  // 就眠時は常に最後
+                        else e.order = so;                               // 起床時はその他は固定値
+                    } else if (category === 'sleep') {
+                        e.order = (so === 0) ? -1000 : minutesOfDay(e.start);  // 本睡眠は常に先頭
+                    } else {
+                        e.order = minutesOfDay(e.start);
+                    }
+                    e.sortOrder = e.order;
+                });
+            });
+        }
+
+        function showUnifiedDetail(info) {
+            const props = info.event.extendedProps || {};
+            const source = calendarSources[props.category];
+
+            $('#detailModalTitle').text((source ? source.label : '記録') + ' 詳細');
+
+            const rows = [
+                ['内容', props.primaryText || info.event.title],
+                ['詳細', props.secondaryText || ''],
+                ['メモ', props.noteText || '']
+            ].filter(function (row) { return row[1]; });
+
+            const $dl = $('<dl class="row mb-0"></dl>');
+            rows.forEach(function (row) {
+                $('<dt class="col-4"></dt>').text(row[0]).appendTo($dl);
+                $('<dd class="col-8"></dd>').text(row[1]).appendTo($dl);
+            });
+            $('#detailBody').empty().append($dl);
+
+            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendar = new FullCalendar.Calendar(document.getElementById('unifiedCalendar'), {
+                initialView: 'dayGridMonth',
+                locale: 'ja',
+                height: 'auto',
+                dayMaxEvents: false,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,listMonth'
+                },
+                buttonText: {
+                    today: '今日',
+                    month: '月',
+                    list: '一覧'
+                },
+                events: buildEvents,
+                eventDisplay: 'block',
+                eventOrder: 'sortOrder,start,title',
+                eventContent: PhycockCalendar.renderRecordEvent,
+                eventDidMount: PhycockCalendar.applyEventColors,
+                eventClick: function (info) {
+                    info.jsEvent.preventDefault();
+                    showUnifiedDetail(info);
+                }
+            });
+            calendar.render();
+
+            document.querySelectorAll('.form-check-input[data-source]').forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    calendar.refetchEvents();
+                });
+            });
+        });
+    </script>
+}

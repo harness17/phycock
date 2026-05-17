@@ -25,7 +25,8 @@ namespace Tests.Statistics
                         Feeling = FeelingLevel.Normal,
                     },
                 });
-            var service = new StatisticsService(healthRepository.Object, sleepRepository.Object);
+            var scheduleRepository = new Mock<ScheduleEntryRepository>(null!);
+            var service = new StatisticsService(healthRepository.Object, sleepRepository.Object, scheduleRepository.Object);
 
             var result = service.GetWeeklyHealthStats("user-1", new DateTime(2026, 5, 1));
 
@@ -41,7 +42,8 @@ namespace Tests.Statistics
             var sleepRepository = new Mock<SleepRecordRepository>(null!);
             healthRepository.Setup(x => x.GetByUserAndRange("user-1", It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(new List<HealthRecordEntity>());
-            var service = new StatisticsService(healthRepository.Object, sleepRepository.Object);
+            var scheduleRepository = new Mock<ScheduleEntryRepository>(null!);
+            var service = new StatisticsService(healthRepository.Object, sleepRepository.Object, scheduleRepository.Object);
 
             var result = service.GetWeeklyHealthStats("user-1", new DateTime(2026, 5, 1));
 

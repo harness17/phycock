@@ -285,6 +285,24 @@ Phycock の `scripts/deploy-samples.ps1` パターンを参考に、IIS / Azure 
 
 認証: Bearer Token（JWT 実装検討）。Swagger UI は ApiSample を参考。
 
+## 共同開発ハーネス（Codex × Claude Code）
+
+このリポジトリは Codex と Claude Code が共同で開発する。汎用ハーネス本体と Phycock 固有 profile は以下を読む。
+
+@.claude/rules/cross-agent-harness.md
+@.claude/rules/project-collaboration-profile.md
+@.claude/rules/handoff-protocol.md
+
+**Claude Code が作業を開始するときの流れ：**
+
+1. ユーザーの依頼を聞いたら、汎用ハーネスと Phycock profile の担当境界で Codex に振るか自分で握るか判断する。
+2. Codex に振るなら `/codex-handoff` スキルで依頼セクションを `CLAUDE_CODE_HANDOFF.md` に追記する。
+3. 自分で実装する場合は通常のフローで進め、必要に応じて Codex にレビューを依頼する。
+4. Codex の作業完了後は `/cross-review` スキルでレビューする。
+5. Merge 判断はユーザー指示を待つ。
+
+**最新の引き継ぎ：** `CLAUDE_CODE_HANDOFF.md` を参照する。
+
 ## 進捗同期（My-Skill-Graph）
 
 このプロジェクトの開発進捗は、ユーザーの My-Skill-Graph ナレッジシステムと自動同期されます。

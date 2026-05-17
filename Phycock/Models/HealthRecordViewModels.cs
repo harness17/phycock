@@ -153,5 +153,8 @@ namespace Phycock.Models
 
         /// <summary>備考表示テキスト。</summary>
         public string? NoteText { get; set; }
+
+        /// <summary>統合カレンダーの並び順キー（1日の流れを表す代表時刻の分換算）。</summary>
+        public int SortOrder { get; set; }
     }
 }

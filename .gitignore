@@ -55,3 +55,9 @@ tmp/
 
 # Generated PDF artifacts
 docs/*.pdf
+
+# 社内向け説明資料（リタリコ本社向け等・内部資料のため Git 管理対象外）
+docs/internal/
+
+# Local scheduled task lock
+.claude/scheduled_tasks.lock

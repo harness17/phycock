@@ -4,6 +4,8 @@ using Phycock.Entity.Enums;
 using Phycock.Models;
 using Phycock.Repository;
 using Phycock.Service;
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 using Xunit;
 
 namespace Tests.ScheduleEntry
@@ -77,6 +79,7 @@ namespace Tests.ScheduleEntry
             Assert.Equal("AM プログラム", item.ExtendedProps.PrimaryText);
             Assert.Equal("通所 / 予定", item.ExtendedProps.SecondaryText);
             Assert.Equal("応募書類", item.ExtendedProps.NoteText);
+            Assert.Equal(540, item.ExtendedProps.SortOrder);
         }
 
         [Fact]
@@ -103,6 +106,66 @@ namespace Tests.ScheduleEntry
             Assert.Equal("#F4E5F8", item.BackgroundColor);
             Assert.Equal("#6C757D", item.BorderColor);
             Assert.Equal("#4A235A", item.TextColor);
+        }
+
+        [Fact]
+        public void GetEventsForCalendar_WithStartTime_SetsSortOrderFromStartTime()
+        {
+            var repository = new Mock<ScheduleEntryRepository>(null!);
+            repository.Setup(x => x.GetByUserAndRange("user-1", new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 31)))
+                .Returns(new List<ScheduleEntryEntity>
+                {
+                    new()
+                    {
+                        Id = 6,
+                        UserId = "user-1",
+                        Date = new DateOnly(2026, 5, 4),
+                        Session = ScheduleSession.PM,
+                        ActivityType = ActivityType.IndividualTraining,
+                        StartTime = new TimeOnly(13, 30),
+                    },
+                });
+            var service = new ScheduleEntryService(repository.Object);
+
+            var result = service.GetEventsForCalendar("user-1", new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 31));
+
+            var item = Assert.Single(result);
+            Assert.Equal(810, item.ExtendedProps.SortOrder);
+        }
+
+        [Theory]
+        [InlineData(ActivityType.GoOut, "#D9EAD3", "#274E13", "PM 外出")]
+        [InlineData(ActivityType.Interview, "#FFF2CC", "#5F4700", "PM 面談")]
+        [InlineData(ActivityType.Private, "#E2F0F9", "#174A68", "PM プライベート")]
+        [InlineData(ActivityType.PracticalTraining, "#FCE4D6", "#5A2600", "PM 実習")]
+        public void GetEventsForCalendar_NewActivityTypes_SetActivityTypeColorsAndLabels(
+            ActivityType activityType,
+            string expectedBackgroundColor,
+            string expectedTextColor,
+            string expectedPrimaryText)
+        {
+            var repository = new Mock<ScheduleEntryRepository>(null!);
+            repository.Setup(x => x.GetByUserAndRange("user-1", new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 31)))
+                .Returns(new List<ScheduleEntryEntity>
+                {
+                    new()
+                    {
+                        Id = 5,
+                        UserId = "user-1",
+                        Date = new DateOnly(2026, 5, 4),
+                        Session = ScheduleSession.PM,
+                        ActivityType = activityType,
+                    },
+                });
+            var service = new ScheduleEntryService(repository.Object);
+
+            var result = service.GetEventsForCalendar("user-1", new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 31));
+
+            var item = Assert.Single(result);
+            Assert.Equal(expectedBackgroundColor, item.BackgroundColor);
+            Assert.Equal("#6C757D", item.BorderColor);
+            Assert.Equal(expectedTextColor, item.TextColor);
+            Assert.Equal(expectedPrimaryText, item.ExtendedProps.PrimaryText);
         }
 
         [Fact]
@@ -159,6 +222,30 @@ namespace Tests.ScheduleEntry
             Assert.Equal("#FFFFFF", item.BackgroundColor);
             Assert.Equal("#6C757D", item.BorderColor);
             Assert.Equal("#343A40", item.TextColor);
+        }
+
+        [Fact]
+        public void ActivityType_DisplayOrder_KeepsFormSelectionOrderWithoutChangingStoredValues()
+        {
+            var result = Enum.GetValues<ActivityType>()
+                .OrderBy(x => x.GetType().GetMember(x.ToString()).Single().GetCustomAttribute<DisplayAttribute>()?.GetOrder())
+                .ToArray();
+
+            Assert.Equal(new[]
+            {
+                ActivityType.Program,
+                ActivityType.IndividualTraining,
+                ActivityType.DepartmentActivity,
+                ActivityType.PracticalTraining,
+                ActivityType.GoOut,
+                ActivityType.Interview,
+                ActivityType.Private,
+                ActivityType.Other,
+            }, result);
+
+            Assert.Equal(3, (int)ActivityType.GoOut);
+            Assert.Equal(4, (int)ActivityType.Other);
+            Assert.Equal(7, (int)ActivityType.PracticalTraining);
         }
     }
 }

@@ -1,14 +1,43 @@
+@model Phycock.Models.StatisticsViewModel
 @{
     ViewData["Title"] = "統計";
+    var isPrint = Context.Request.Query["print"] == "1";
+    if (isPrint)
+    {
+        ViewData["Print"] = true;
+    }
+    var weekStart = Model.WeeklyReport.WeekStart;
+    var weekStartIso = weekStart.ToString("yyyy-MM-dd");
+    var report = Model.WeeklyReport;
+    var monthlyCalendar = Model.MonthlyCalendar;
+    // PDF出力時の対象セクション（print=1 のときのみ有効）。monthly 以外は weekly 扱い。
+    var printSection = Context.Request.Query["section"] == "monthly" ? "monthly" : "weekly";
+    var printWeekly = !isPrint || printSection == "weekly";
+    var printMonthly = !isPrint || printSection == "monthly";
+    // 月次チャートで週区切りの縦線を引く位置（最初の日曜にあたるデータ点の index）
+    var monthFirstDow = (int)new DateTime(monthlyCalendar.Year, monthlyCalendar.Month, 1).DayOfWeek;
+    var monthlyWeekStartOffset = (7 - monthFirstDow) % 7;
+
+    string ScoreClass(double? value)
+    {
+        if (value is not double v) return "score-none";
+        if (v < 1.5) return "score-1";
+        if (v < 2.5) return "score-2";
+        if (v < 3.5) return "score-3";
+        if (v < 4.5) return "score-4";
+        return "score-5";
+    }
 }
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+@if (!isPrint)
+{
+<div class="statistics-toolbar d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h1 class="h3 mb-0">統計</h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 align-items-center">
         <input id="weekStart" type="date" class="form-control" />
-        <button id="reloadStats" type="button" class="btn btn-outline-primary">更新</button>
-        <button id="exportSamplePdf" type="button" class="btn btn-outline-secondary">
-            <i class="fa-regular fa-file-pdf"></i> PDF出力（サンプル）
+        <button id="reloadStats" type="button" class="btn btn-outline-primary text-nowrap">更新</button>
+        <button id="exportPdf" type="button" class="btn btn-outline-secondary text-nowrap">
+            <i class="fa-regular fa-file-pdf"></i> PDF出力
         </button>
     </div>
 </div>
@@ -21,87 +50,49 @@
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">月次</button>
     </li>
 </ul>
+}
 
 <div class="tab-content">
-    <div class="tab-pane fade show active" id="weekly" role="tabpanel">
+    @if (printWeekly)
+    {
+    <div class="@(isPrint ? "" : "tab-pane fade show active")" id="weekly" role="tabpanel">
         <section class="weekly-report-sample mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
-                    <h2 class="h5 mb-1">週次レポートサンプル</h2>
-                    <p class="text-muted small mb-0">体調、睡眠内訳、通所予定、メモを一週間で確認する表示案です。</p>
+                    <h2 class="h5 mb-1">週次レポート</h2>
+                    <p class="text-muted small mb-0">体調、睡眠内訳、通所予定、メモを一週間で確認します。</p>
                 </div>
-                <span class="badge text-bg-light border">サンプルデータ</span>
+                <span class="text-muted small">@weekStart.ToString("yyyy/MM/dd") 〜 @weekStart.AddDays(6).ToString("yyyy/MM/dd")</span>
             </div>
 
             <div class="weekly-report-chart">
-                <canvas id="weeklyReportSampleChart" height="150"></canvas>
+                <canvas id="weeklyReportSampleChart"></canvas>
             </div>
             <div class="chart-guide mt-2">
                 <span class="sleep-target-swatch"></span>
-                <span>背景の黄色帯: 正常な睡眠時間の目安（6-8時間）</span>
+                <span>背景の黄色帯: 正常な睡眠時間の目安（7-9時間）</span>
             </div>
 
             <div class="weekly-schedule-strip mt-3" aria-label="通所スケジュール">
-                <div class="schedule-day planned">
-                    <span class="schedule-date">5/4</span>
-                    <div class="schedule-entry status-attended">
-                        <strong>AM 通所</strong>
-                        <small>通所済み / ヘルスケア</small>
+                @foreach (var day in report.Days)
+                {
+                    <div class="schedule-day @day.ScheduleDayClass">
+                        <span class="schedule-date">@day.Date.Month/@day.Date.Day</span>
+                        @foreach (var s in day.ScheduleStrip)
+                        {
+                            <div class="schedule-entry @s.StatusClass">
+                                <strong>@s.SessionLabel</strong>
+                                @if (!string.IsNullOrEmpty(s.DetailLabel))
+                                {
+                                    <small>@s.DetailLabel</small>
+                                }
+                            </div>
+                        }
                     </div>
-                    <div class="schedule-entry status-attended">
-                        <strong>PM 通所</strong>
-                        <small>通所済み / 個別訓練</small>
-                    </div>
-                </div>
-                <div class="schedule-day remote">
-                    <span class="schedule-date">5/5</span>
-                    <div class="schedule-entry status-planned">
-                        <strong>PM 在宅</strong>
-                        <small>予定 / セルフワーク</small>
-                    </div>
-                </div>
-                <div class="schedule-day planned">
-                    <span class="schedule-date">5/6</span>
-                    <div class="schedule-entry status-late">
-                        <strong>AM 通所</strong>
-                        <small>遅刻 / 職場コミュニケーション</small>
-                    </div>
-                    <div class="schedule-entry status-attended">
-                        <strong>PM 通所</strong>
-                        <small>通所済み / 部署活動</small>
-                    </div>
-                </div>
-                <div class="schedule-day rest">
-                    <span class="schedule-date">5/7</span>
-                    <div class="schedule-entry status-absent">
-                        <strong>AM 通所</strong>
-                        <small>欠席 / 体調不良</small>
-                    </div>
-                </div>
-                <div class="schedule-day planned">
-                    <span class="schedule-date">5/8</span>
-                    <div class="schedule-entry status-early-leave">
-                        <strong>AM 通所</strong>
-                        <small>早退 / 就労前の準備</small>
-                    </div>
-                </div>
-                <div class="schedule-day rest">
-                    <span class="schedule-date">5/9</span>
-                    <div class="schedule-entry status-none">
-                        <strong>予定なし</strong>
-                        <small>休養日</small>
-                    </div>
-                </div>
-                <div class="schedule-day rest">
-                    <span class="schedule-date">5/10</span>
-                    <div class="schedule-entry status-none">
-                        <strong>予定なし</strong>
-                        <small>翌週準備</small>
-                    </div>
-                </div>
+                }
             </div>
 
-            <div class="table-responsive mt-3">
+            <div class="table-responsive mt-3 weekly-report-table-wrap">
                 <table class="table table-sm align-middle weekly-report-table">
                     <thead>
                         <tr>
@@ -116,115 +107,56 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <th scope="row">5/4 月</th>
-                            <td>4.0</td>
-                            <td>3.8</td>
-                            <td>6.5h</td>
-                            <td>0.5h</td>
-                            <td>AM 通所済み / PM 通所済み</td>
-                            <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 3 / 症状: 眠気<span class="record-memo">メモ: 起床直後は重い。</span></span></div>
-                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4 / 気分 4 / 症状: なし<span class="record-memo">メモ: 午後から集中できた。</span></span></div>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 5 / 気分 4 / 症状: なし<span class="record-memo">メモ: 帰宅後も安定。</span></span></div>
-                            </td>
-                            <td>
-                                <div class="record-note"><strong>本睡眠</strong><span>6.5h / 途中で一度起きたが再入眠できた。</span></div>
-                                <div class="record-note"><strong>他睡眠</strong><span>0.5h / 通所後に短く休んだ。</span></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">5/5 火</th>
-                            <td>3.2</td>
-                            <td>3.0</td>
-                            <td>5.0h</td>
-                            <td>1.5h</td>
-                            <td>PM 在宅予定</td>
-                            <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 2 / 症状: 頭痛、不安<span class="record-memo">メモ: 朝から緊張が強い。</span></span></div>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 3.5 / 気分 4 / 症状: 眠気<span class="record-memo">メモ: 在宅後は落ち着いた。</span></span></div>
-                            </td>
-                            <td>
-                                <div class="record-note"><strong>本睡眠</strong><span>5.0h / 夜間に中途覚醒。</span></div>
-                                <div class="record-note"><strong>他睡眠</strong><span>1.5h / 昼寝で補った。</span></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">5/6 水</th>
-                            <td>3.8</td>
-                            <td>3.4</td>
-                            <td>6.0h</td>
-                            <td>1.0h</td>
-                            <td>AM 遅刻 / PM 通所済み</td>
-                            <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 3 / 気分 3 / 症状: 不安、倦怠感<span class="record-memo">メモ: 遅刻連絡済み。</span></span></div>
-                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4 / 気分 3.5 / 症状: 不安<span class="record-memo">メモ: 作業量を調整。</span></span></div>
-                                <div class="record-note"><strong>訓練終了時</strong><span>体調 4.5 / 気分 4 / 症状: なし</span></div>
-                            </td>
-                            <td>
-                                <div class="record-note"><strong>本睡眠</strong><span>6.0h / 入眠に時間がかかった。</span></div>
-                                <div class="record-note"><strong>他睡眠</strong><span>1.0h / 帰宅後に仮眠。</span></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">5/7 木</th>
-                            <td>2.8</td>
-                            <td>2.6</td>
-                            <td>4.5h</td>
-                            <td>2.0h</td>
-                            <td>AM 欠席</td>
-                            <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 2.5 / 気分 2 / 症状: 眠気、頭痛<span class="record-memo">メモ: 体調不良で休養。</span></span></div>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 3 / 気分 3.2 / 症状: 眠気<span class="record-memo">メモ: 少し回復。</span></span></div>
-                            </td>
-                            <td>
-                                <div class="record-note"><strong>本睡眠</strong><span>4.5h / 夜の睡眠が短い。</span></div>
-                                <div class="record-note"><strong>他睡眠</strong><span>2.0h / 昼寝が長め。</span></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">5/8 金</th>
-                            <td>4.4</td>
-                            <td>4.2</td>
-                            <td>7.0h</td>
-                            <td>0.5h</td>
-                            <td>AM 早退</td>
-                            <td>
-                                <div class="record-note"><strong>起床時</strong><span>体調 4.5 / 気分 4 / 症状: なし<span class="record-memo">メモ: 体調は安定。</span></span></div>
-                                <div class="record-note"><strong>訓練終了時</strong><span>体調 4.3 / 気分 4.4 / 症状: 軽い倦怠感</span></div>
-                            </td>
-                            <td>
-                                <div class="record-note"><strong>本睡眠</strong><span>7.0h / 本睡眠が取れて起床後も安定。</span></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">5/9 土</th>
-                            <td>4.1</td>
-                            <td>4.0</td>
-                            <td>7.5h</td>
-                            <td>0h</td>
-                            <td>予定なし</td>
-                            <td>
-                                <div class="record-note"><strong>訓練開始時</strong><span>体調 4.1 / 気分 4 / 症状: なし</span></div>
-                            </td>
-                            <td>
-                                <div class="record-note"><strong>本睡眠</strong><span>7.5h / まとまって眠れた。</span></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">5/10 日</th>
-                            <td>3.6</td>
-                            <td>3.4</td>
-                            <td>6.0h</td>
-                            <td>1.0h</td>
-                            <td>予定なし</td>
-                            <td>
-                                <div class="record-note"><strong>就眠時</strong><span>体調 3.6 / 気分 3.4 / 症状: 不安<span class="record-memo">メモ: 翌週の通所準備で緊張あり。</span></span></div>
-                            </td>
-                            <td>
-                                <div class="record-note"><strong>他睡眠</strong><span>1.0h / 夕方に短い仮眠。</span></div>
-                            </td>
-                        </tr>
+                        @foreach (var d in report.Days)
+                        {
+                            <tr>
+                                <th scope="row">@d.DayLabel</th>
+                                <td>@(d.ConditionAvg?.ToString("0.0") ?? "-")</td>
+                                <td>@(d.FeelingAvg?.ToString("0.0") ?? "-")</td>
+                                <td>@(d.NightSleepHours > 0 ? $"{d.NightSleepHours:0.0}h" : "-")</td>
+                                <td>@(d.OtherSleepHours > 0 ? $"{d.OtherSleepHours:0.0}h" : "-")</td>
+                                <td>
+                                    @foreach (var line in d.ScheduleSummaryLines)
+                                    {
+                                        <div>@line</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (d.HealthRecords.Count == 0)
+                                    {
+                                        <span class="text-muted small">記録なし</span>
+                                    }
+                                    @foreach (var h in d.HealthRecords)
+                                    {
+                                        <div class="record-note">
+                                            <strong>@h.TimingLabel</strong>
+                                            <span>
+                                                体調 @h.ConditionLabel / 気分 @h.FeelingLabel / 症状: @h.SymptomsLabel
+                                                @if (!string.IsNullOrEmpty(h.Memo))
+                                                {
+                                                    <span class="record-memo">メモ: @h.Memo</span>
+                                                }
+                                            </span>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (d.SleepRecords.Count == 0)
+                                    {
+                                        <span class="text-muted small">記録なし</span>
+                                    }
+                                    @foreach (var s in d.SleepRecords)
+                                    {
+                                        <div class="record-note">
+                                            <strong>@s.TypeLabel</strong>
+                                            <span>
+                                                @($"{s.Hours:0.0}h")@(string.IsNullOrEmpty(s.Memo) ? "" : $" / {s.Memo}")
+                                            </span>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -233,14 +165,13 @@
         <section class="weekly-timeline-sample mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
-                    <h2 class="h5 mb-1">睡眠時間帯 週次タイムライン（サンプル）</h2>
+                    <h2 class="h5 mb-1">睡眠時間帯 週次タイムライン</h2>
                     <p class="text-muted small mb-0">1日24時間軸で睡眠と通所予定の時間帯を一週間まとめて確認します。日跨ぎ睡眠は前後の日に分割表示。</p>
                 </div>
-                <span class="badge text-bg-light border">サンプルデータ</span>
             </div>
 
             <div class="weekly-timeline-chart">
-                <canvas id="weeklyTimelineSampleChart" height="220"></canvas>
+                <canvas id="weeklyTimelineSampleChart"></canvas>
             </div>
             <div class="timeline-legend mt-2">
                 <span class="legend-item"><span class="legend-swatch" style="background:#5B7CFA;"></span>本睡眠</span>
@@ -250,81 +181,111 @@
                 <span class="legend-item text-muted">※ 早退時は予定時間を短縮表示</span>
             </div>
         </section>
+    </div>
+    }
+    @if (printMonthly)
+    {
+    <div class="@(isPrint ? "" : "tab-pane fade")" id="monthly" role="tabpanel">
+        <section class="monthly-calendar mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">月次カレンダー</h2>
+                    <p class="text-muted small mb-0">体調、気分、睡眠合計、通所予定を日別に確認します。</p>
+                </div>
+                <span class="text-muted small">@monthlyCalendar.Year/@monthlyCalendar.Month.ToString("00")</span>
+            </div>
 
-        <div class="row">
-            <div class="col-lg-6 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">体調・気分</h5>
-                        <canvas id="weeklyHealthChart" height="160"></canvas>
-                    </div>
+            <div class="monthly-calendar-grid" role="table" aria-label="月次統計カレンダー">
+                <div class="monthly-weekdays" role="row">
+                    <div role="columnheader">日</div>
+                    <div role="columnheader">月</div>
+                    <div role="columnheader">火</div>
+                    <div role="columnheader">水</div>
+                    <div role="columnheader">木</div>
+                    <div role="columnheader">金</div>
+                    <div role="columnheader">土</div>
+                </div>
+                <div class="monthly-days" role="rowgroup">
+                    @{ var weekIndex = 0; }
+                    @foreach (var week in monthlyCalendar.Cells.Chunk(7))
+                    {
+                        // 3週ごとに改ページ（PDF出力時に週行が途中で切れないようにする）
+                        var weekBreak = weekIndex > 0 && weekIndex % 3 == 0 ? " monthly-week-break" : "";
+                        <div class="monthly-week@(weekBreak)" role="row">
+                            @foreach (var cell in week)
+                            {
+                                var sleepClass = $"sleep-{cell.SleepLevel.ToString().ToLowerInvariant()}";
+                                var scheduleClass = $"schedule-{cell.ScheduleDayClass}";
+                                <div class="monthly-day @(cell.InMonth ? "" : "outside-month")" role="cell">
+                                    <div class="monthly-day-number">@cell.Date.Day</div>
+                                    @if (cell.InMonth)
+                                    {
+                                        <div class="monthly-metrics">
+                                            <span class="monthly-metric @ScoreClass(cell.ConditionAvg)">
+                                                <span>体調</span>
+                                                <strong>@(cell.ConditionAvg?.ToString("0.0") ?? "-")</strong>
+                                            </span>
+                                            <span class="monthly-metric @ScoreClass(cell.FeelingAvg)">
+                                                <span>気分</span>
+                                                <strong>@(cell.FeelingAvg?.ToString("0.0") ?? "-")</strong>
+                                            </span>
+                                            <span class="monthly-metric @sleepClass">
+                                                <span>睡眠</span>
+                                                <strong>@($"{cell.SleepTotalHours:0.0}h")</strong>
+                                            </span>
+                                            <span class="monthly-schedule-chip @scheduleClass">@cell.ScheduleSummary</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        weekIndex++;
+                    }
                 </div>
             </div>
-            <div class="col-lg-6 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">睡眠時間</h5>
-                        <canvas id="weeklySleepChart" height="160"></canvas>
-                    </div>
-                </div>
+
+            <div class="monthly-legend mt-3" aria-label="凡例">
+                <span class="legend-item"><span class="legend-swatch score-1"></span>体調・気分 1</span>
+                <span class="legend-item"><span class="legend-swatch score-3"></span>体調・気分 3</span>
+                <span class="legend-item"><span class="legend-swatch score-5"></span>体調・気分 5</span>
+                <span class="legend-item"><span class="legend-swatch sleep-insufficient"></span>睡眠 &lt;6h</span>
+                <span class="legend-item"><span class="legend-swatch sleep-slightlyshort"></span>睡眠 6-7h</span>
+                <span class="legend-item"><span class="legend-swatch sleep-adequate"></span>睡眠 7-9h</span>
+                <span class="legend-item"><span class="legend-swatch sleep-excessive"></span>睡眠 &gt;9h</span>
+                <span class="legend-item"><span class="legend-swatch schedule-planned"></span>通所</span>
+                <span class="legend-item"><span class="legend-swatch schedule-remote"></span>在宅</span>
+                <span class="legend-item"><span class="legend-swatch schedule-rest"></span>予定なし</span>
             </div>
-        </div>
-    </div>
-    <div class="tab-pane fade" id="monthly" role="tabpanel">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">月次 体調・気分</h5>
-                <canvas id="monthlyHealthChart" height="120"></canvas>
+        </section>
+
+        <section class="monthly-chart">
+            <h2 class="h5 mb-1">月次 体調・気分・睡眠</h2>
+            <p class="text-muted small mb-3">体調・気分の推移と睡眠内訳を月単位で確認します。</p>
+            <div class="monthly-report-chart">
+                <canvas id="monthlyReportChart"></canvas>
             </div>
-        </div>
+            <div class="chart-guide mt-2">
+                <span class="sleep-target-swatch"></span>
+                <span>背景の黄色帯: 正常な睡眠時間の目安（7-9時間）</span>
+            </div>
+        </section>
     </div>
+    }
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
-        let weeklyHealthChart;
-        let weeklySleepChart;
-        let monthlyHealthChart;
+        const isPrintMode = @(isPrint ? "true" : "false");
+        const printSection = '@printSection';
+        const currentWeekStart = '@weekStartIso';
+        // サーバー側（DBデータ）から注入するチャート用データ
+        const reportChartData = @Html.Raw(Json.Serialize(report.ReportChart));
+        const timelineChartData = @Html.Raw(Json.Serialize(report.TimelineChart));
+        const monthlyReportChartData = @Html.Raw(Json.Serialize(Model.MonthlyCalendar.ReportChart));
+        const monthlyWeekStartOffset = @monthlyWeekStartOffset;
         let weeklyReportSampleChart;
-        const statisticsUrls = {
-            healthWeekly: '@Url.Action("GetHealthWeekly", "Statistics")',
-            sleepWeekly: '@Url.Action("GetSleepWeekly", "Statistics")',
-            healthMonthly: '@Url.Action("GetHealthMonthly", "Statistics")'
-        };
-
-        function toDateInputValue(date) {
-            return date.toISOString().slice(0, 10);
-        }
-
-        function createOrUpdateLineChart(chart, canvasId, labels, conditionData, feelingData) {
-            const data = {
-                labels: labels,
-                datasets: [
-                    { label: '体調', data: conditionData, borderColor: '#0d6efd', backgroundColor: '#0d6efd', tension: 0.25 },
-                    { label: '気分', data: feelingData, borderColor: '#F59F00', backgroundColor: '#F59F00', tension: 0.25 }
-                ]
-            };
-            if (chart) {
-                chart.data = data;
-                chart.update();
-                return chart;
-            }
-            return new Chart(document.getElementById(canvasId), { type: 'line', data: data });
-        }
-
-        function createOrUpdateBarChart(chart, canvasId, labels, sleepHoursData) {
-            const data = {
-                labels: labels,
-                datasets: [{ label: '睡眠時間', data: sleepHoursData, backgroundColor: '#6f42c1' }]
-            };
-            if (chart) {
-                chart.data = data;
-                chart.update();
-                return chart;
-            }
-            return new Chart(document.getElementById(canvasId), { type: 'bar', data: data });
-        }
+        let monthlyReportChart;
 
         const sleepTargetBandPlugin = {
             id: 'sleepTargetBand',
@@ -333,8 +294,8 @@
                 const { chartArea, ctx } = chart;
                 if (!yScale || !chartArea || pluginOptions?.enabled === false) return;
 
-                const from = pluginOptions?.from ?? 6;
-                const to = pluginOptions?.to ?? 8;
+                const from = pluginOptions?.from ?? 7;
+                const to = pluginOptions?.to ?? 9;
                 const yTop = yScale.getPixelForValue(to);
                 const yBottom = yScale.getPixelForValue(from);
 
@@ -353,15 +314,15 @@
             }
         };
 
-        function createWeeklyReportSampleChart() {
-            const labels = ['5/4', '5/5', '5/6', '5/7', '5/8', '5/9', '5/10'];
+        // 週次・月次共用の複合チャート設定（棒=睡眠内訳 / 折れ線=体調・気分）
+        function reportChartConfig(chartData) {
             const data = {
-                labels: labels,
+                labels: chartData.labels,
                 datasets: [
                     {
                         type: 'bar',
                         label: '本睡眠',
-                        data: [6.5, 5.0, 6.0, 4.5, 7.0, 7.5, 6.0],
+                        data: chartData.nightSleep,
                         backgroundColor: '#5B7CFA',
                         order: 3,
                         borderRadius: 4,
@@ -371,7 +332,7 @@
                     {
                         type: 'bar',
                         label: '他睡眠',
-                        data: [0.5, 1.5, 1.0, 2.0, 0.5, 0, 1.0],
+                        data: chartData.otherSleep,
                         backgroundColor: '#8DD7BF',
                         order: 3,
                         borderRadius: 4,
@@ -381,7 +342,7 @@
                     {
                         type: 'line',
                         label: '体調',
-                        data: [4.0, 3.2, 3.8, 2.8, 4.4, 4.1, 3.6],
+                        data: chartData.condition,
                         borderColor: '#E05D44',
                         backgroundColor: '#E05D44',
                         borderWidth: 3,
@@ -389,12 +350,13 @@
                         tension: 0.25,
                         pointRadius: 5,
                         pointHoverRadius: 6,
+                        spanGaps: true,
                         yAxisID: 'conditionScore'
                     },
                     {
                         type: 'line',
                         label: '気分',
-                        data: [3.8, 3.0, 3.4, 2.6, 4.2, 4.0, 3.4],
+                        data: chartData.feeling,
                         borderColor: '#F59F00',
                         backgroundColor: '#F59F00',
                         borderDash: [6, 3],
@@ -403,18 +365,22 @@
                         tension: 0.25,
                         pointRadius: 5,
                         pointHoverRadius: 6,
+                        spanGaps: true,
                         yAxisID: 'conditionScore'
                     }
                 ]
             };
             const options = {
                 responsive: true,
+                maintainAspectRatio: false,
+                animation: isPrintMode ? false : undefined,
+                layout: { padding: { right: 8, left: 4, top: 4, bottom: 4 } },
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { position: 'bottom' },
                     sleepTargetBand: {
-                        from: 6,
-                        to: 8,
+                        from: 7,
+                        to: 9,
                         color: 'rgba(255, 193, 7, 0.16)',
                         borderColor: 'rgba(245, 159, 0, 0.45)'
                     },
@@ -448,6 +414,11 @@
                 }
             };
 
+            return { data, options };
+        }
+
+        function createWeeklyReportSampleChart() {
+            const { data, options } = reportChartConfig(reportChartData);
             if (weeklyReportSampleChart) {
                 weeklyReportSampleChart.data = data;
                 weeklyReportSampleChart.options = options;
@@ -462,96 +433,34 @@
             });
         }
 
-        function loadStats() {
-            const weekStart = $('#weekStart').val();
-            const date = new Date(weekStart + 'T00:00:00');
-            $.get(statisticsUrls.healthWeekly, { weekStart: weekStart }, function (data) {
-                weeklyHealthChart = createOrUpdateLineChart(
-                    weeklyHealthChart,
-                    'weeklyHealthChart',
-                    data.labels,
-                    data.conditionData,
-                    data.feelingData);
-            });
-            $.get(statisticsUrls.sleepWeekly, { weekStart: weekStart }, function (data) {
-                weeklySleepChart = createOrUpdateBarChart(
-                    weeklySleepChart,
-                    'weeklySleepChart',
-                    data.labels,
-                    data.sleepHoursData);
-            });
-            $.get(statisticsUrls.healthMonthly, { year: date.getFullYear(), month: date.getMonth() + 1 }, function (data) {
-                monthlyHealthChart = createOrUpdateLineChart(
-                    monthlyHealthChart,
-                    'monthlyHealthChart',
-                    data.labels,
-                    data.conditionData,
-                    data.feelingData);
+        function createMonthlyReportChart() {
+            const { data, options } = reportChartConfig(monthlyReportChartData);
+            // 一週間ごと（日曜起点）に縦線を引いて週の区切りを見やすくする
+            const isWeekStart = (i) => i >= 0 && (i - monthlyWeekStartOffset) % 7 === 0;
+            options.scales.x.grid = {
+                display: true,
+                color: (ctx) => isWeekStart(ctx.index) ? 'rgba(0,0,0,0.28)' : 'rgba(0,0,0,0.05)',
+                lineWidth: (ctx) => isWeekStart(ctx.index) ? 1.5 : 1
+            };
+            monthlyReportChart = new Chart(document.getElementById('monthlyReportChart'), {
+                data: data,
+                options: options,
+                plugins: [sleepTargetBandPlugin]
             });
         }
 
         let weeklyTimelineSampleChart;
 
         function createWeeklyTimelineSampleChart() {
-            // 縦軸: 7日（上から月→日）。横軸: 0-24h。
-            // データは [開始時刻, 終了時刻] の浮動バー。null は当該日に該当無し。
-            // 日跨ぎ睡眠は「前日 [23.x, 24]」「当日 [0, 起床時刻]」の 2 バーに分割。
-            const labels = ['5/4 (月)', '5/5 (火)', '5/6 (水)', '5/7 (木)', '5/8 (金)', '5/9 (土)', '5/10 (日)'];
-
-            const nightSleepEarly = [
-                [0, 7.0],   // 月: 前夜から 7:00 まで
-                [0, 6.5],   // 火
-                [0, 6.0],   // 水
-                [0, 5.5],   // 木: 浅い
-                [0, 7.5],   // 金
-                [0, 7.5],   // 土
-                [0, 6.0]    // 日
-            ];
-            const nightSleepLate = [
-                [23.5, 24], // 月の夜（→翌火曜 0 時へ続く）
-                [23.0, 24], // 火
-                [23.0, 24], // 水
-                [22.5, 24], // 木
-                [23.5, 24], // 金
-                [23.0, 24], // 土
-                null         // 日: 翌週開始のため省略
-            ];
-            const otherSleep = [
-                null,
-                [14.0, 15.0], // 火: 仮眠
-                null,
-                [13.0, 14.5], // 木: 体調不良で日中休息
-                null,
-                null,
-                [17.0, 18.0]  // 日: 夕方の短い仮眠
-            ];
-            const scheduleAm = [
-                [9.5, 12.5],  // 月
-                null,           // 火: 予定なし
-                [9.5, 12.5],  // 水
-                null,           // 木: 欠席 → scheduleAbsent へ
-                [9.5, 12.5],  // 金
-                null,           // 土
-                null            // 日
-            ];
-            const scheduleAbsent = [
-                null,
-                null,
-                null,
-                [9.5, 12.5],  // 木: AM 欠席（破線表示）
-                null,
-                null,
-                null
-            ];
-            const schedulePm = [
-                [13.5, 15.5],
-                [13.5, 15.5], // 火: 在宅 PM
-                [13.5, 15.5],
-                null,
-                [13.5, 14.5], // 金: 早退で短く
-                null,
-                null
-            ];
+            // 縦軸: 7日。横軸: 0-24h。データは [開始時刻, 終了時刻] の浮動バー。
+            // null は当該日に該当無し。日跨ぎ睡眠は前後の日に分割済み（サーバー側で計算）。
+            const labels = timelineChartData.labels;
+            const nightSleepEarly = timelineChartData.nightSleepEarly;
+            const nightSleepLate = timelineChartData.nightSleepLate;
+            const otherSleep = timelineChartData.otherSleep;
+            const scheduleAm = timelineChartData.scheduleAm;
+            const scheduleAbsent = timelineChartData.scheduleAbsent;
+            const schedulePm = timelineChartData.schedulePm;
 
             const data = {
                 labels: labels,
@@ -628,6 +537,9 @@
 
             const options = {
                 responsive: true,
+                maintainAspectRatio: false,
+                animation: isPrintMode ? false : undefined,
+                layout: { padding: { right: 8, left: 4, top: 4, bottom: 4 } },
                 indexAxis: 'y',
                 interaction: { mode: 'nearest', intersect: true },
                 plugins: {
@@ -694,16 +606,39 @@
             );
         }
 
-        const today = new Date();
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        $('#weekStart').val(toDateInputValue(weekStart));
-        $('#reloadStats').on('click', loadStats);
-        createWeeklyReportSampleChart();
-        createWeeklyTimelineSampleChart();
-        loadStats();
+        if (isPrintMode) {
+            // ポイント: print=1 のときはサーバー側 Playwright が描画完了を window.chartsReady で検知する
+            // section に応じて描画するチャートを切り替える（不在の canvas を触らない）
+            if (printSection === 'monthly') {
+                createMonthlyReportChart();
+            } else {
+                createWeeklyReportSampleChart();
+                createWeeklyTimelineSampleChart();
+            }
+            // requestAnimationFrame 2回でレイアウト確定 → chartsReady を立てる
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                window.chartsReady = true;
+            }));
+        } else {
+            $('#weekStart').val(currentWeekStart);
+            // 「更新」: 週次レポートはサーバー再取得が必要なのでページ遷移する
+            $('#reloadStats').on('click', function () {
+                const ws = $('#weekStart').val();
+                window.location.href = '@Url.Action("Index", "Statistics")' + '?weekStart=' + encodeURIComponent(ws);
+            });
+            // PDF出力: アクティブなタブ（週次/月次）に応じて出力対象を切り替える
+            $('#exportPdf').on('click', function () {
+                const ws = $('#weekStart').val();
+                const activeTab = document.querySelector('.nav-tabs .nav-link.active');
+                const section = activeTab?.dataset.bsTarget === '#monthly' ? 'monthly' : 'weekly';
+                window.location.href = '@Url.Action("ExportPdf", "Statistics")'
+                    + '?weekStart=' + encodeURIComponent(ws) + '&section=' + section;
+            });
+            createWeeklyReportSampleChart();
+            createWeeklyTimelineSampleChart();
+            createMonthlyReportChart();
+        }
     </script>
-    <script src="~/js/statistics-pdf-sample.js" asp-append-version="true"></script>
 }
 
 <style>
@@ -714,8 +649,15 @@
         background: #fff;
     }
 
+    /* チャート枠：明示的な高さで maintainAspectRatio:false と組み合わせる */
     .weekly-report-chart {
-        min-height: 280px;
+        position: relative;
+        height: 320px;
+    }
+
+    .weekly-report-chart canvas,
+    .weekly-timeline-chart canvas {
+        max-width: 100% !important;
     }
 
     .chart-guide {
@@ -735,6 +677,16 @@
         flex: 0 0 auto;
     }
 
+    /* 最上部ツールバー：日付入力・ボタンが折り返さないよう固定幅 */
+    .statistics-toolbar .form-control[type="date"] {
+        width: auto;
+        flex: 0 0 auto;
+    }
+
+    .statistics-toolbar .btn {
+        flex: 0 0 auto;
+    }
+
     .weekly-schedule-strip {
         display: grid;
         grid-template-columns: repeat(7, minmax(96px, 1fr));
@@ -751,7 +703,11 @@
         display: flex;
         flex-direction: column;
         gap: 0.35rem;
-        white-space: nowrap;
+        /* 文字数が多くてもセル内で折り返す（はみ出し防止） */
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        min-width: 0;
     }
 
     .schedule-date {
@@ -777,6 +733,8 @@
     .schedule-entry small {
         color: #495057;
         font-size: 0.74rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .schedule-entry.status-attended {
@@ -818,13 +776,48 @@
         border-color: #CED4DA;
     }
 
-    .weekly-report-table th,
-    .weekly-report-table td {
-        min-width: 88px;
+    /* 日付詳細テーブル：列幅を固定（table-layout: fixed） */
+    .weekly-report-table {
+        table-layout: fixed;
+        width: 100%;
     }
 
-    .weekly-report-table td:nth-last-child(-n+2) {
-        min-width: 280px;
+    .weekly-report-table th,
+    .weekly-report-table td {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        vertical-align: top;
+    }
+
+    .weekly-report-table th:nth-child(1),
+    .weekly-report-table td:nth-child(1) {
+        width: 8%;
+    }
+
+    .weekly-report-table th:nth-child(2),
+    .weekly-report-table td:nth-child(2),
+    .weekly-report-table th:nth-child(3),
+    .weekly-report-table td:nth-child(3),
+    .weekly-report-table th:nth-child(4),
+    .weekly-report-table td:nth-child(4),
+    .weekly-report-table th:nth-child(5),
+    .weekly-report-table td:nth-child(5) {
+        width: 7%;
+    }
+
+    .weekly-report-table th:nth-child(6),
+    .weekly-report-table td:nth-child(6) {
+        width: 12%;
+    }
+
+    .weekly-report-table th:nth-child(7),
+    .weekly-report-table td:nth-child(7) {
+        width: 28%;
+    }
+
+    .weekly-report-table th:nth-child(8),
+    .weekly-report-table td:nth-child(8) {
+        width: 24%;
     }
 
     .record-note {
@@ -860,8 +853,191 @@
         background: #fff;
     }
 
+    .monthly-calendar,
+    .monthly-chart {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #fff;
+    }
+
+    /* 月次チャート枠：明示的な高さで maintainAspectRatio:false と組み合わせる */
+    .monthly-report-chart {
+        position: relative;
+        height: 340px;
+    }
+
+    .monthly-report-chart canvas {
+        max-width: 100% !important;
+    }
+
+    .monthly-calendar-grid {
+        min-width: 760px;
+    }
+
+    .monthly-weekdays,
+    .monthly-week {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(104px, 1fr));
+    }
+
+    .monthly-weekdays > div {
+        padding: 0.35rem 0.5rem;
+        color: #6c757d;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-align: center;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .monthly-day {
+        min-height: 148px;
+        border-right: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.45rem;
+        background: #fff;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .monthly-week .monthly-day:first-child {
+        border-left: 1px solid #dee2e6;
+    }
+
+    .monthly-day.outside-month {
+        background: #f8f9fa;
+        color: #adb5bd;
+    }
+
+    .monthly-day-number {
+        font-weight: 700;
+        font-size: 0.92rem;
+        line-height: 1.2;
+        margin-bottom: 0.4rem;
+    }
+
+    .monthly-metrics {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .monthly-metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 5px;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        border: 1px solid transparent;
+    }
+
+    .monthly-metric strong {
+        font-size: 0.8rem;
+    }
+
+    .monthly-schedule-chip {
+        display: block;
+        border-radius: 5px;
+        padding: 0.3rem 0.4rem;
+        font-size: 0.75rem;
+        line-height: 1.25;
+        border: 1px solid transparent;
+    }
+
+    .score-none,
+    .sleep-none {
+        color: #6c757d;
+        background: #f1f3f5;
+        border-color: #adb5bd;
+    }
+
+    /* 体調・気分の色は体調記録カレンダー（HealthRecordService.GetConditionColor）と統一
+       睡眠記録・通所スケジュールと同じパステル方針 */
+    .score-1 {
+        color: #842029;
+        background: #f8d7da;
+        border-color: #dc3545;
+    }
+
+    .score-2 {
+        color: #7a3e0a;
+        background: #fce4d6;
+        border-color: #fd7e14;
+    }
+
+    .score-3 {
+        color: #1b4f72;
+        background: #d8eaf7;
+        border-color: #2874a6;
+    }
+
+    .score-4 {
+        color: #0b4f3a;
+        background: #d2f4ea;
+        border-color: #20c997;
+    }
+
+    .score-5 {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #198754;
+    }
+
+    .sleep-insufficient {
+        color: #842029;
+        background: #f8d7da;
+        border-color: #dc3545;
+    }
+
+    .sleep-slightlyshort {
+        color: #664d03;
+        background: #fff3cd;
+        border-color: #ffc107;
+    }
+
+    .sleep-adequate {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #198754;
+    }
+
+    .sleep-excessive {
+        color: #084298;
+        background: #cfe2ff;
+        border-color: #0d6efd;
+    }
+
+    .schedule-planned {
+        color: #084298;
+        background: #cfe2ff;
+        border-color: #0d6efd;
+    }
+
+    .schedule-remote {
+        color: #0f5132;
+        background: #d1e7dd;
+        border-color: #198754;
+    }
+
+    .schedule-rest {
+        color: #495057;
+        background: #f8f9fa;
+        border-color: #adb5bd;
+    }
+
+    .monthly-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        font-size: 0.82rem;
+        color: #495057;
+    }
+
     .weekly-timeline-chart {
-        min-height: 280px;
+        position: relative;
+        height: 360px;
     }
 
     .timeline-legend {
@@ -898,10 +1074,69 @@
 
         .weekly-timeline-sample {
             page-break-inside: avoid;
+            page-break-before: always;
         }
 
         .weekly-schedule-strip {
             overflow: visible;
         }
+    }
+
+    /* print=1 モード時のレイアウト最適化 */
+    body.print-mode {
+        font-size: 11px;
+    }
+
+    body.print-mode .weekly-report-chart {
+        min-height: 0;
+    }
+
+    body.print-mode .weekly-timeline-chart {
+        min-height: 0;
+    }
+
+    body.print-mode .weekly-report-chart canvas {
+        max-height: 320px;
+    }
+
+    body.print-mode .weekly-timeline-chart canvas {
+        max-height: 380px;
+    }
+
+    body.print-mode .weekly-timeline-sample {
+        page-break-inside: avoid;
+        page-break-before: always;
+    }
+
+    /* 日付詳細テーブルの前で改ページ（チャート+ストリップとテーブルを別ページに） */
+    body.print-mode .weekly-report-table-wrap {
+        page-break-before: always;
+    }
+
+    /* 月次PDF: カレンダーとチャートを別ページに分ける */
+    body.print-mode .monthly-chart {
+        page-break-before: always;
+    }
+
+    /* 月次PDF: 週行が途中で切れないようにし、3週ごとに改ページ */
+    body.print-mode .monthly-week {
+        page-break-inside: avoid;
+    }
+
+    body.print-mode .monthly-week-break {
+        page-break-before: always;
+    }
+
+    /* 改ページ後の週行はヘッダーが無いので上罫線を付ける */
+    body.print-mode .monthly-week-break .monthly-day {
+        border-top: 1px solid #dee2e6;
+    }
+
+    body.print-mode .monthly-report-chart {
+        min-height: 0;
+    }
+
+    body.print-mode .monthly-report-chart canvas {
+        max-height: 340px;
     }
 </style>
