@@ -115,7 +115,7 @@ namespace Tests.HealthRecord
             Assert.Equal("起床時 体調:やや悪い", item.ExtendedProps.PrimaryText);
             Assert.Equal("気分:やや良い", item.ExtendedProps.SecondaryText);
             Assert.True(item.AllDay);
-            Assert.Equal("#fd7e14", item.Color);
+            Assert.Equal("#FCE4D6", item.Color);
             Assert.Equal(360, item.ExtendedProps.SortOrder);
         }
 
