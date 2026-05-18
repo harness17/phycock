@@ -2,7 +2,8 @@
 @{
     var users = await UserManagementService.GetMemberListAsync();
     var selectedUserId = await UserManagementService.GetSelectedMemberUserIdAsync();
-    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    // PathBase を含めないとサブアプリ配置（/Phycock 配下など）で Redirect 先が 404 になる
+    var returnUrl = Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString;
 }
 
 @if (User.IsInRole("Admin") && users.Any())
