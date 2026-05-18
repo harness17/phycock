@@ -115,6 +115,44 @@ namespace Phycock.Controllers
             return View(model);
         }
 
+        /// <summary>パスワード再設定フォーム表示。</summary>
+        public async Task<IActionResult> ResetPassword(string? id)
+        {
+            if (id == null) return BadRequest();
+            var model = await _workerService.GetUserResetPasswordAsync(id);
+            if (model == null)
+            {
+                _logger.Warn(new LogModel($"ユーザーが見つかりません: id={id}"));
+                return NotFound();
+            }
+            return View(model);
+        }
+
+        /// <summary>パスワード再設定処理（POST）。</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(UserManagementResetPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _workerService.ResetPasswordAsync(model.Id, model.NewPassword);
+                if (result.Succeeded)
+                {
+                    TempData[SessionKey.Message] = LocalUtil.GetAlertMessage("{1}のパスワードを変更しました。", "ユーザー");
+                    return RedirectToAction("Index", new { returnList = true });
+                }
+
+                // ポイント: Identity のパスワードポリシー違反などのエラーを画面に表示する
+                foreach (var error in result.Errors)
+                    ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            // ポイント: バリデーションエラー時は対象ユーザー名を補完して再表示する
+            var reloaded = await _workerService.GetUserResetPasswordAsync(model.Id);
+            if (reloaded != null) model.UserName = reloaded.UserName;
+            return View(model);
+        }
+
         /// <summary>ユーザー削除確認フォーム表示。</summary>
         public async Task<IActionResult> Delete(string? id)
         {

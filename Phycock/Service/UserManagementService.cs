@@ -165,6 +165,35 @@ namespace Phycock.Service
         }
 
         /// <summary>
+        /// 指定IDのユーザーをパスワード再設定画面用 ViewModel に変換して返す。
+        /// </summary>
+        public async Task<UserManagementResetPasswordViewModel?> GetUserResetPasswordAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return null;
+
+            return new UserManagementResetPasswordViewModel
+            {
+                Id       = user.Id,
+                UserName = user.UserName ?? "",
+            };
+        }
+
+        /// <summary>
+        /// 管理者として対象ユーザーのパスワードを再設定する。
+        /// ポイント: 現在のパスワードを知らなくても再設定できるよう、リセットトークンを発行して適用する。
+        /// </summary>
+        public async Task<IdentityResult> ResetPasswordAsync(string id, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+                return IdentityResult.Failed(new IdentityError { Description = "ユーザーが見つかりません。" });
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            return await _userManager.ResetPasswordAsync(user, token, newPassword);
+        }
+
+        /// <summary>
         /// ユーザーを無効化する（初期 Admin ユーザーは無効化不可）
         /// </summary>
         public async Task<IdentityResult> DisableUserAsync(string id)

@@ -12,9 +12,7 @@ for details on configuring this project to bundle and minify static web assets. 
 
 /* ===== ナビゲーションバー ===== */
 a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
+  white-space: nowrap;
 }
 
 .navbar-brand-logo {
@@ -22,6 +20,26 @@ a.navbar-brand {
   height: 2rem;
   border-radius: 0.25rem;
   object-fit: contain;
+}
+
+/* ポイント: Admin はメニュー項目が多く、横幅不足でリンクが折り返されて崩れる。
+   各リンクを 1 行固定にし、navbar 内のみフォントを少し詰めて収める。 */
+.navbar .nav-link {
+  white-space: nowrap;
+}
+@media (min-width: 1200px) {
+  .navbar-nav .nav-link {
+    font-size: 0.95rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* ポイント: 対象利用者セレクタは flex 内で極小幅まで縮むと選択中の利用者名が
+   読めなくなるため、最小・最大幅を指定して表示を安定させる。 */
+#globalTargetUserId {
+  min-width: 7rem;
+  max-width: 12rem;
 }
 
 /* ===== レスポンシブフォントサイズ ===== */
