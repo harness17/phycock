@@ -104,6 +104,8 @@
                 let minStart = null, maxEnd = null;
                 group.forEach(function (e) {
                     if (!e.extendedProps || e.extendedProps.category !== 'schedule') return;
+                    // プライベートは訓練ではないため訓練開始／終了時刻の基準に含めない
+                    if (e.extendedProps.activityType === 'プライベート') return;
                     const st = minutesOfDay(e.start);
                     const en = e.end ? minutesOfDay(e.end) : st;
                     if (minStart === null || st < minStart) minStart = st;
