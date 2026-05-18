@@ -17,6 +17,8 @@
     // 月次チャートで週区切りの縦線を引く位置（最初の日曜にあたるデータ点の index）
     var monthFirstDow = (int)new DateTime(monthlyCalendar.Year, monthlyCalendar.Month, 1).DayOfWeek;
     var monthlyWeekStartOffset = (7 - monthFirstDow) % 7;
+    // プライベート色は ActivityType.Private の CalendarColor 属性を一元参照する
+    var privateColor = ActivityType.Private.GetCalendarColor();
 
     string ScoreClass(double? value)
     {
@@ -254,6 +256,7 @@
                 <span class="legend-item"><span class="legend-swatch sleep-excessive"></span>睡眠 &gt;9h</span>
                 <span class="legend-item"><span class="legend-swatch schedule-planned"></span>通所</span>
                 <span class="legend-item"><span class="legend-swatch schedule-remote"></span>在宅</span>
+                <span class="legend-item"><span class="legend-swatch schedule-private"></span>プライベート</span>
                 <span class="legend-item"><span class="legend-swatch schedule-rest"></span>予定なし</span>
             </div>
         </section>
@@ -284,6 +287,49 @@
                     <canvas id="sleepConditionBandChart"></canvas>
                 </div>
                 <div class="correlation-lead mt-3">@monthlyCalendar.SleepConditionByBand.LeadText</div>
+                <div class="table-responsive mt-3 sleep-correlation-table-wrap">
+                    <table class="table table-sm align-middle sleep-correlation-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">睡眠帯</th>
+                                <th scope="col">対象日数</th>
+                                <th scope="col">前夜の睡眠記録（平均）</th>
+                                <th scope="col">翌日の体調平均</th>
+                                <th scope="col">翌日の通所スケジュール</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var band in monthlyCalendar.SleepConditionByBand.Bands)
+                            {
+                                <tr>
+                                    <th scope="row">@band.Label</th>
+                                    <td>@(band.DayCount > 0 ? $"{band.DayCount} 日" : "-")</td>
+                                    <td>
+                                        @if (band.DayCount > 0)
+                                        {
+                                            <text>本睡眠 @($"{band.AverageNightSleepHours:0.0}")h / 他睡眠 @($"{band.AverageOtherSleepHours:0.0}")h</text>
+                                        }
+                                        else
+                                        {
+                                            <text>-</text>
+                                        }
+                                    </td>
+                                    <td>@(band.AverageCondition?.ToString("0.0") ?? "-")</td>
+                                    <td>
+                                        @if (band.DayCount > 0)
+                                        {
+                                            <text>通所 @band.AttendDayCount 日 / 在宅 @band.RemoteDayCount 日 / プライベート @band.PrivateDayCount 日 / 予定なし @band.RestDayCount 日</text>
+                                        }
+                                        else
+                                        {
+                                            <text>-</text>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
                 <div class="correlation-note mt-3">
                     ※ これは平均の比較であり、因果関係を保証するものではありません。日数の少ない帯は平均が不安定です。支援の判断材料の一つとしてご利用ください。
                 </div>
@@ -845,6 +891,11 @@
         border-color: #A3CFBB;
     }
 
+    .schedule-day.private {
+        background: @privateColor.Background;
+        border-color: @privateColor.Border;
+    }
+
     .schedule-day.rest {
         background: #F8F9FA;
         border-color: #CED4DA;
@@ -1095,6 +1146,12 @@
         border-color: #198754;
     }
 
+    .schedule-private {
+        color: @privateColor.Text;
+        background: @privateColor.Background;
+        border-color: @privateColor.Border;
+    }
+
     .schedule-rest {
         color: #495057;
         background: #f8f9fa;
@@ -1141,6 +1198,11 @@
         padding: 0.6rem 0.75rem;
         font-size: 0.8rem;
         color: #664d03;
+    }
+
+    .sleep-correlation-table th,
+    .sleep-correlation-table td {
+        vertical-align: middle;
     }
 
     .weekly-timeline-chart {
@@ -1253,11 +1315,17 @@
         page-break-before: always;
     }
 
+    /* 帯別棒グラフは表・要約と同じページに収めるため印刷時は高さを抑える */
     body.print-mode .sleep-correlation-chart {
         min-height: 0;
+        height: 240px;
     }
 
     body.print-mode .sleep-correlation-chart canvas {
-        max-height: 340px;
+        max-height: 240px;
+    }
+
+    body.print-mode .sleep-correlation-table-wrap {
+        page-break-inside: avoid;
     }
 </style>

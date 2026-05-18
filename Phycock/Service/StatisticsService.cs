@@ -159,6 +159,18 @@ namespace Phycock.Service
             return calendar;
         }
 
+        /// <summary>帯別棒グラフの集計用ワーク。1睡眠帯あたり1インスタンス。</summary>
+        private sealed class SleepBandAccumulator
+        {
+            public List<double> Conditions { get; } = new();
+            public List<double> NightSleepHours { get; } = new();
+            public List<double> OtherSleepHours { get; } = new();
+            public int AttendDayCount { get; set; }
+            public int RemoteDayCount { get; set; }
+            public int PrivateDayCount { get; set; }
+            public int RestDayCount { get; set; }
+        }
+
         /// <summary>睡眠4帯の定義（不足→過剰の固定順）。</summary>
         private static readonly (SleepLevel Level, string Label)[] SleepBandDefs =
         {
@@ -175,7 +187,7 @@ namespace Phycock.Service
         /// </summary>
         private static SleepConditionByBandDto BuildSleepConditionByBand(List<DailyReportDto> inMonthDays)
         {
-            var conditionsByLevel = new Dictionary<SleepLevel, List<double>>
+            var accByLevel = new Dictionary<SleepLevel, SleepBandAccumulator>
             {
                 [SleepLevel.Insufficient] = new(),
                 [SleepLevel.SlightlyShort] = new(),
@@ -193,19 +205,37 @@ namespace Phycock.Service
                 if (prevSleep <= 0 || current.ConditionAvg is not double condition) continue;
 
                 var level = SleepStandards.Classify(prevSleep);
-                if (conditionsByLevel.TryGetValue(level, out var list)) list.Add(condition);
+                if (!accByLevel.TryGetValue(level, out var acc)) continue;
+
+                acc.Conditions.Add(condition);
+                acc.NightSleepHours.Add(prev.NightSleepHours);
+                acc.OtherSleepHours.Add(prev.OtherSleepHours);
+                switch (current.ScheduleDayClass)
+                {
+                    case "planned": acc.AttendDayCount++; break;
+                    case "remote": acc.RemoteDayCount++; break;
+                    case "private": acc.PrivateDayCount++; break;
+                    default: acc.RestDayCount++; break;
+                }
             }
 
             var dto = new SleepConditionByBandDto();
             foreach (var (level, label) in SleepBandDefs)
             {
-                var conds = conditionsByLevel[level];
+                var acc = accByLevel[level];
+                var conds = acc.Conditions;
                 dto.Bands.Add(new SleepBandStatDto
                 {
                     Level = level,
                     Label = label,
                     DayCount = conds.Count,
-                    AverageCondition = conds.Count > 0 ? Math.Round(conds.Average(), 2) : null
+                    AverageCondition = conds.Count > 0 ? Math.Round(conds.Average(), 2) : null,
+                    AverageNightSleepHours = conds.Count > 0 ? Math.Round(acc.NightSleepHours.Average(), 2) : null,
+                    AverageOtherSleepHours = conds.Count > 0 ? Math.Round(acc.OtherSleepHours.Average(), 2) : null,
+                    AttendDayCount = acc.AttendDayCount,
+                    RemoteDayCount = acc.RemoteDayCount,
+                    PrivateDayCount = acc.PrivateDayCount,
+                    RestDayCount = acc.RestDayCount
                 });
             }
             dto.TotalDayCount = dto.Bands.Sum(b => b.DayCount);
@@ -334,8 +364,12 @@ namespace Phycock.Service
                 return;
             }
 
-            // 日種別: 通所が1件でも含まれれば planned、全部 AtHome なら remote
-            dto.ScheduleDayClass = daySchedule.All(x => x.IsAtHome) ? "remote" : "planned";
+            // 日種別: プライベートのみの日は private、通所/在宅の予定があれば
+            // プライベートを除いて判定（通所/在宅優先）。通所が1件でも含まれれば planned、全部 AtHome なら remote。
+            var attendanceEntries = daySchedule.Where(x => x.ActivityType != ActivityType.Private).ToList();
+            dto.ScheduleDayClass = attendanceEntries.Count == 0
+                ? "private"
+                : attendanceEntries.All(x => x.IsAtHome) ? "remote" : "planned";
 
             var summaryParts = new List<string>();
             foreach (var entry in daySchedule)
@@ -352,8 +386,12 @@ namespace Phycock.Service
                     ? entry.ProgramType.Value.GetDisplayName()
                     : entry.ActivityType.GetDisplayName();
 
-                // テーブル「通所」列のサマリ
-                if (entry.Status == ScheduleStatus.Planned)
+                // テーブル「通所」列のサマリ。プライベートは通所実績ではないので種別名で表示する。
+                if (entry.ActivityType == ActivityType.Private)
+                {
+                    summaryParts.Add($"{sessionPrefix} プライベート");
+                }
+                else if (entry.Status == ScheduleStatus.Planned)
                 {
                     summaryParts.Add($"{sessionPrefix} {venue}予定");
                 }

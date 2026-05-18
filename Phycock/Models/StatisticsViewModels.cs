@@ -70,6 +70,24 @@ namespace Phycock.Models
 
         /// <summary>この帯に該当した日数。</summary>
         public int DayCount { get; set; }
+
+        /// <summary>この帯の前夜の本睡眠平均（時間）。該当日が無いときは null。</summary>
+        public double? AverageNightSleepHours { get; set; }
+
+        /// <summary>この帯の前夜の他睡眠平均（時間）。該当日が無いときは null。</summary>
+        public double? AverageOtherSleepHours { get; set; }
+
+        /// <summary>この帯の翌日が通所日（予定に通所を含む）だった日数。</summary>
+        public int AttendDayCount { get; set; }
+
+        /// <summary>この帯の翌日が在宅日（予定が全て在宅）だった日数。</summary>
+        public int RemoteDayCount { get; set; }
+
+        /// <summary>この帯の翌日がプライベート日（予定が全てプライベート）だった日数。</summary>
+        public int PrivateDayCount { get; set; }
+
+        /// <summary>この帯の翌日が予定なし日だった日数。</summary>
+        public int RestDayCount { get; set; }
     }
 
     /// <summary>月次カレンダーの1日セル DTO。</summary>

@@ -136,7 +136,7 @@ namespace Tests.ScheduleEntry
         [Theory]
         [InlineData(ActivityType.GoOut, "#D9EAD3", "#274E13", "PM 外出")]
         [InlineData(ActivityType.Interview, "#FFF2CC", "#5F4700", "PM 面談")]
-        [InlineData(ActivityType.Private, "#E2F0F9", "#174A68", "PM プライベート")]
+        [InlineData(ActivityType.Private, "#E7DEFA", "#5A3D8A", "PM プライベート")]
         [InlineData(ActivityType.PracticalTraining, "#FCE4D6", "#5A2600", "PM 実習")]
         public void GetEventsForCalendar_NewActivityTypes_SetActivityTypeColorsAndLabels(
             ActivityType activityType,

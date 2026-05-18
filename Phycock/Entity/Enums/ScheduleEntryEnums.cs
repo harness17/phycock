@@ -87,7 +87,7 @@ namespace Phycock.Entity.Enums
 
         /// <summary>プライベート。</summary>
         [Display(Name = "プライベート", Order = 7)]
-        [CalendarColor("#E2F0F9", "#4B9CD3", "#174A68")]
+        [CalendarColor("#E7DEFA", "#8E6FC7", "#5A3D8A")]
         Private = 6,
 
         /// <summary>その他。</summary>
