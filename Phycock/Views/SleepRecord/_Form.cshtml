@@ -30,9 +30,15 @@
             <span asp-validation-for="Memo" class="text-danger"></span>
         </div>
     </div>
-    <div class="mt-4">
+    <div class="mt-4 d-flex flex-wrap gap-2">
         <button type="submit" class="btn btn-primary">保存</button>
         <a asp-action="Index" class="btn btn-outline-secondary">戻る</a>
+        @if (Model.Id != 0)
+        {
+            <button type="submit" formaction="@Url.Action("Delete", "SleepRecord")"
+                    formmethod="post" formnovalidate class="btn btn-outline-danger ms-auto cancel"
+                    onclick="return confirm('この睡眠記録を削除します。よろしいですか？');">削除</button>
+        }
     </div>
 </form>
 
