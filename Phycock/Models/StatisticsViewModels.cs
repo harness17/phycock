@@ -183,6 +183,8 @@ namespace Phycock.Models
         public List<double?[]?> OtherSleep { get; set; } = new();
         public List<double?[]?> ScheduleAm { get; set; } = new();
         public List<double?[]?> SchedulePm { get; set; } = new();
+        public List<double?[]?> ScheduleAmPrivate { get; set; } = new();
+        public List<double?[]?> SchedulePmPrivate { get; set; } = new();
         public List<double?[]?> ScheduleAbsent { get; set; } = new();
     }
 

@@ -179,6 +179,7 @@
                 <span class="legend-item"><span class="legend-swatch" style="background:#5B7CFA;"></span>本睡眠</span>
                 <span class="legend-item"><span class="legend-swatch" style="background:#8DD7BF;"></span>他睡眠 / 仮眠</span>
                 <span class="legend-item"><span class="legend-swatch" style="background:#F59F00;"></span>通所予定（AM / PM）</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:@privateColor.Border;"></span>プライベート予定（AM / PM）</span>
                 <span class="legend-item"><span class="legend-swatch legend-swatch-dashed"></span>通所予定 欠席（破線）</span>
                 <span class="legend-item text-muted">※ 早退時は予定時間を短縮表示</span>
             </div>
@@ -569,6 +570,33 @@
 
         let weeklyTimelineSampleChart;
 
+        // Chart.js v4 の bar 枠線は塗りつぶしで描かれ borderDash が効かないため、
+        // 欠席バーの破線枠だけプラグインでストローク描画する。
+        const dashedAbsentBorderPlugin = {
+            id: 'dashedAbsentBorder',
+            afterDatasetsDraw(chart) {
+                const ctx = chart.ctx;
+                chart.data.datasets.forEach((ds, di) => {
+                    if (ds.label !== '通所 欠席') return;
+                    const meta = chart.getDatasetMeta(di);
+                    if (meta.hidden) return;
+                    ctx.save();
+                    ctx.strokeStyle = '#F59F00';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    meta.data.forEach((bar, i) => {
+                        if (!ds.data[i]) return;
+                        const p = bar.getProps(['x', 'y', 'base', 'height'], true);
+                        const left = Math.min(p.x, p.base);
+                        const right = Math.max(p.x, p.base);
+                        const top = p.y - p.height / 2;
+                        ctx.strokeRect(left + 1, top + 1, (right - left) - 2, p.height - 2);
+                    });
+                    ctx.restore();
+                });
+            }
+        };
+
         function createWeeklyTimelineSampleChart() {
             // 縦軸: 7日。横軸: 0-24h。データは [開始時刻, 終了時刻] の浮動バー。
             // null は当該日に該当無し。日跨ぎ睡眠は前後の日に分割済み（サーバー側で計算）。
@@ -579,6 +607,8 @@
             const scheduleAm = timelineChartData.scheduleAm;
             const scheduleAbsent = timelineChartData.scheduleAbsent;
             const schedulePm = timelineChartData.schedulePm;
+            const scheduleAmPrivate = timelineChartData.scheduleAmPrivate;
+            const schedulePmPrivate = timelineChartData.schedulePmPrivate;
 
             const data = {
                 labels: labels,
@@ -633,12 +663,32 @@
                         grouped: false
                     },
                     {
+                        label: 'プライベート AM',
+                        data: scheduleAmPrivate,
+                        backgroundColor: '@privateColor.Border',
+                        borderColor: '@privateColor.Border',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: 'プライベート PM',
+                        data: schedulePmPrivate,
+                        backgroundColor: '@privateColor.Border',
+                        borderColor: '@privateColor.Border',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
                         label: '通所 欠席',
                         data: scheduleAbsent,
                         backgroundColor: 'rgba(245, 159, 0, 0.10)',
-                        borderColor: '#F59F00',
-                        borderWidth: 2,
-                        borderDash: [6, 4],
+                        borderWidth: 0,
                         borderRadius: 4,
                         barPercentage: 0.95,
                         categoryPercentage: 0.95,
@@ -720,7 +770,7 @@
 
             weeklyTimelineSampleChart = new Chart(
                 document.getElementById('weeklyTimelineSampleChart'),
-                { type: 'bar', data: data, options: options }
+                { type: 'bar', data: data, options: options, plugins: [dashedAbsentBorderPlugin] }
             );
         }
 
