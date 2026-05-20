@@ -236,6 +236,7 @@
                                                 <span>睡眠</span>
                                                 <strong>@($"{cell.SleepTotalHours:0.0}h")</strong>
                                             </span>
+                                            <span class="monthly-health-times">体調記録: @cell.HealthTimingSummary</span>
                                             <span class="monthly-schedule-chip @scheduleClass">@cell.ScheduleSummary</span>
                                         </div>
                                     }
@@ -1119,6 +1120,17 @@
         font-size: 0.75rem;
         line-height: 1.25;
         border: 1px solid transparent;
+    }
+
+    .monthly-health-times {
+        display: block;
+        color: #495057;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 0.3rem 0.4rem;
+        font-size: 0.75rem;
+        line-height: 1.25;
     }
 
     .score-none,

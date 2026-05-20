@@ -60,7 +60,7 @@ namespace Tests.HealthRecord
         public void Create_ReturnsFalse_WhenSameDateAndTimingExists()
         {
             var repository = new Mock<HealthRecordRepository>(null!);
-            repository.Setup(x => x.ExistsByUserDateTiming("current-user", new DateTime(2026, 5, 3), RecordTiming.Noon, null))
+            repository.Setup(x => x.ExistsByUserDateTiming("current-user", new DateTime(2026, 5, 3), RecordTiming.Noon, null, null))
                 .Returns(true);
             var service = new HealthRecordService(repository.Object);
 
@@ -69,6 +69,75 @@ namespace Tests.HealthRecord
                 UserId = "current-user",
                 RecordDate = new DateTime(2026, 5, 3),
                 RecordTiming = RecordTiming.Noon,
+                Condition = ConditionLevel.Bad,
+                Feeling = FeelingLevel.Normal,
+            }, "current-user", isAdmin: false);
+
+            Assert.False(result);
+            repository.Verify(x => x.Insert(It.IsAny<HealthRecordEntity>()), Times.Never);
+        }
+
+        [Fact]
+        public void Create_CustomTiming_PersistsSpecifiedRecordTime()
+        {
+            var repository = new Mock<HealthRecordRepository>(null!);
+            HealthRecordEntity? inserted = null;
+            repository.Setup(x => x.Insert(It.IsAny<HealthRecordEntity>()))
+                .Callback<HealthRecordEntity>(entity => inserted = entity);
+            var service = new HealthRecordService(repository.Object);
+
+            service.Create(new HealthRecordFormViewModel
+            {
+                UserId = "current-user",
+                RecordDate = new DateTime(2026, 5, 3),
+                RecordTiming = RecordTiming.Custom,
+                RecordTime = new TimeOnly(14, 35),
+                Condition = ConditionLevel.Bad,
+                Feeling = FeelingLevel.Normal,
+            }, "current-user", isAdmin: false);
+
+            Assert.NotNull(inserted);
+            Assert.Equal(RecordTiming.Custom, inserted.RecordTiming);
+            Assert.Equal(new TimeOnly(14, 35), inserted.RecordTime);
+        }
+
+        [Fact]
+        public void Create_CustomTiming_DefaultsRecordTimeToCurrentMinute_WhenMissing()
+        {
+            var repository = new Mock<HealthRecordRepository>(null!);
+            HealthRecordEntity? inserted = null;
+            repository.Setup(x => x.Insert(It.IsAny<HealthRecordEntity>()))
+                .Callback<HealthRecordEntity>(entity => inserted = entity);
+            var service = new HealthRecordService(repository.Object);
+
+            service.Create(new HealthRecordFormViewModel
+            {
+                UserId = "current-user",
+                RecordDate = new DateTime(2026, 5, 3),
+                RecordTiming = RecordTiming.Custom,
+                Condition = ConditionLevel.Bad,
+                Feeling = FeelingLevel.Normal,
+            }, "current-user", isAdmin: false);
+
+            Assert.NotNull(inserted);
+            Assert.NotNull(inserted.RecordTime);
+        }
+
+        [Fact]
+        public void Create_CustomTiming_ChecksDuplicateByTime()
+        {
+            var recordTime = new TimeOnly(14, 35);
+            var repository = new Mock<HealthRecordRepository>(null!);
+            repository.Setup(x => x.ExistsByUserDateTiming("current-user", new DateTime(2026, 5, 3), RecordTiming.Custom, recordTime, null))
+                .Returns(true);
+            var service = new HealthRecordService(repository.Object);
+
+            var result = service.Create(new HealthRecordFormViewModel
+            {
+                UserId = "current-user",
+                RecordDate = new DateTime(2026, 5, 3),
+                RecordTiming = RecordTiming.Custom,
+                RecordTime = recordTime,
                 Condition = ConditionLevel.Bad,
                 Feeling = FeelingLevel.Normal,
             }, "current-user", isAdmin: false);
@@ -124,6 +193,7 @@ namespace Tests.HealthRecord
         [InlineData(RecordTiming.Noon, 510)]
         [InlineData(RecordTiming.Evening, 945)]
         [InlineData(RecordTiming.Night, 1439)]
+        [InlineData(RecordTiming.Custom, 755)]
         public void GetEventsForCalendar_SetsSortOrderFromRecordTiming(RecordTiming timing, int expectedSortOrder)
         {
             var repository = new Mock<HealthRecordRepository>(null!);
@@ -136,6 +206,7 @@ namespace Tests.HealthRecord
                         UserId = "user-1",
                         RecordDate = new DateTime(2026, 5, 3),
                         RecordTiming = timing,
+                        RecordTime = timing == RecordTiming.Custom ? new TimeOnly(12, 35) : null,
                         Condition = ConditionLevel.Normal,
                         Feeling = FeelingLevel.Normal,
                     },
@@ -146,6 +217,34 @@ namespace Tests.HealthRecord
 
             var item = Assert.Single(result);
             Assert.Equal(expectedSortOrder, item.ExtendedProps.SortOrder);
+        }
+
+        [Fact]
+        public void GetEventsForCalendar_CustomTiming_UsesTimedStartAndLabel()
+        {
+            var repository = new Mock<HealthRecordRepository>(null!);
+            repository.Setup(x => x.GetByUserAndRange("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 5, 31)))
+                .Returns(new List<HealthRecordEntity>
+                {
+                    new()
+                    {
+                        Id = 10,
+                        UserId = "user-1",
+                        RecordDate = new DateTime(2026, 5, 3),
+                        RecordTiming = RecordTiming.Custom,
+                        RecordTime = new TimeOnly(14, 35),
+                        Condition = ConditionLevel.Normal,
+                        Feeling = FeelingLevel.Normal,
+                    },
+                });
+            var service = new HealthRecordService(repository.Object);
+
+            var result = service.GetEventsForCalendar("user-1", new DateTime(2026, 5, 1), new DateTime(2026, 6, 1));
+
+            var item = Assert.Single(result);
+            Assert.Equal("2026-05-03T14:35:00", item.Start);
+            Assert.False(item.AllDay);
+            Assert.Equal("任意時刻 14:35 体調:普通", item.Title);
         }
 
         [Fact]
@@ -202,7 +301,7 @@ namespace Tests.HealthRecord
             var repository = new Mock<HealthRecordRepository>(null!);
             repository.Setup(x => x.SelectById(10))
                 .Returns(new HealthRecordEntity { Id = 10, UserId = "owner-user" });
-            repository.Setup(x => x.ExistsByUserDateTiming("owner-user", new DateTime(2026, 5, 3), RecordTiming.Night, 10))
+            repository.Setup(x => x.ExistsByUserDateTiming("owner-user", new DateTime(2026, 5, 3), RecordTiming.Night, null, 10))
                 .Returns(true);
             var service = new HealthRecordService(repository.Object);
 
@@ -229,6 +328,7 @@ namespace Tests.HealthRecord
                 {
                     new() { Id = 10, UserId = "user-1", RecordTiming = RecordTiming.Morning },
                     new() { Id = 11, UserId = "user-1", RecordTiming = RecordTiming.Noon },
+                    new() { Id = 12, UserId = "user-1", RecordTiming = RecordTiming.Custom, RecordTime = new TimeOnly(14, 35) },
                 });
             var service = new HealthRecordService(repository.Object);
 

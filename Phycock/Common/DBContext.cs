@@ -35,7 +35,7 @@ namespace Phycock.Common
             }
 
             modelBuilder.Entity<HealthRecordEntity>()
-                .HasIndex(x => new { x.UserId, x.RecordDate, x.RecordTiming })
+                .HasIndex(x => new { x.UserId, x.RecordDate, x.RecordTiming, x.RecordTime })
                 .IsUnique()
                 .HasFilter("[DelFlag] = 0");
         }

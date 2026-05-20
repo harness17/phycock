@@ -21,7 +21,11 @@ namespace Phycock.Entity.Enums
 
         /// <summary>就眠時。</summary>
         [Display(Name = "就眠時")]
-        Night = 3
+        Night = 3,
+
+        /// <summary>任意時刻。</summary>
+        [Display(Name = "任意時刻")]
+        Custom = 4
     }
 
     /// <summary>

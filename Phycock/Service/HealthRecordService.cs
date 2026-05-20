@@ -67,7 +67,7 @@ namespace Phycock.Service
             {
                 Id = entity.Id,
                 RecordDate = entity.RecordDate.ToString("yyyy/MM/dd"),
-                RecordTiming = entity.RecordTiming.GetDisplayName(),
+                RecordTiming = FormatTiming(entity),
                 Symptoms = FromFlags(entity.SymptomFlags).Select(x => x.GetDisplayName()).ToList(),
                 Condition = entity.Condition.GetDisplayName(),
                 Feeling = entity.Feeling.GetDisplayName(),
@@ -82,6 +82,7 @@ namespace Phycock.Service
             {
                 UserId = currentUserId,
                 RecordDate = recordDate ?? DateTime.Today,
+                RecordTime = GetDefaultCustomTime(),
             };
 
             return FillSelections(form);
@@ -91,13 +92,15 @@ namespace Phycock.Service
         public bool Create(HealthRecordFormViewModel model, string currentUserId, bool isAdmin = false)
         {
             var targetUserId = isAdmin && !string.IsNullOrWhiteSpace(model.UserId) ? model.UserId : currentUserId;
-            if (IsDuplicate(targetUserId, model.RecordDate, model.RecordTiming)) return false;
+            var recordTime = NormalizeRecordTime(model.RecordTiming, model.RecordTime);
+            if (IsDuplicate(targetUserId, model.RecordDate, model.RecordTiming, recordTime)) return false;
 
             var entity = new HealthRecordEntity
             {
                 UserId = targetUserId,
                 RecordDate = model.RecordDate.Date,
                 RecordTiming = model.RecordTiming,
+                RecordTime = recordTime,
                 SymptomFlags = ToFlags(model.SelectedSymptoms),
                 Condition = model.Condition,
                 Feeling = model.Feeling,
@@ -113,10 +116,12 @@ namespace Phycock.Service
         {
             var entity = _repository.SelectById(model.Id);
             if (entity == null || (!isAdmin && entity.UserId != currentUserId)) return false;
-            if (IsDuplicate(entity.UserId, model.RecordDate, model.RecordTiming, model.Id)) return false;
+            var recordTime = NormalizeRecordTime(model.RecordTiming, model.RecordTime);
+            if (IsDuplicate(entity.UserId, model.RecordDate, model.RecordTiming, recordTime, model.Id)) return false;
 
             entity.RecordDate = model.RecordDate.Date;
             entity.RecordTiming = model.RecordTiming;
+            entity.RecordTime = recordTime;
             entity.SymptomFlags = ToFlags(model.SelectedSymptoms);
             entity.Condition = model.Condition;
             entity.Feeling = model.Feeling;
@@ -127,11 +132,11 @@ namespace Phycock.Service
         }
 
         /// <summary>同一ユーザー・同一日・同一タイミングの記録が存在するか確認する。</summary>
-        public bool IsDuplicate(string userId, DateTime recordDate, RecordTiming recordTiming, long? excludeId = null)
+        public bool IsDuplicate(string userId, DateTime recordDate, RecordTiming recordTiming, TimeOnly? recordTime = null, long? excludeId = null)
         {
             if (string.IsNullOrWhiteSpace(userId)) return false;
 
-            return _repository.ExistsByUserDateTiming(userId, recordDate, recordTiming, excludeId);
+            return _repository.ExistsByUserDateTiming(userId, recordDate, recordTiming, NormalizeRecordTime(recordTiming, recordTime), excludeId);
         }
 
         /// <summary>体調記録を論理削除する。所有者でも Admin でもない場合は false。</summary>
@@ -189,6 +194,7 @@ namespace Phycock.Service
 
             return (_repository.GetByUserAndDate(userId, recordDate) ?? new List<HealthRecordEntity>())
                 .Where(x => !excludeId.HasValue || x.Id != excludeId.Value)
+                .Where(x => x.RecordTiming != RecordTiming.Custom)
                 .Select(x => x.RecordTiming)
                 .Distinct()
                 .ToList();
@@ -202,6 +208,8 @@ namespace Phycock.Service
                 UserId = entity.UserId,
                 RecordDate = entity.RecordDate,
                 RecordTiming = entity.RecordTiming,
+                RecordTime = entity.RecordTime,
+                TimingLabel = FormatTiming(entity),
                 Symptoms = string.Join("、", FromFlags(entity.SymptomFlags).Select(x => x.GetDisplayName())),
                 SymptomFlags = entity.SymptomFlags,
                 Condition = entity.Condition,
@@ -213,14 +221,19 @@ namespace Phycock.Service
         private static HealthRecordCalendarEventDto ToCalendarEventDto(HealthRecordEntity entity)
         {
             var color = GetConditionColor(entity.Condition);
-            var primaryText = $"{entity.RecordTiming.GetDisplayName()} 体調:{entity.Condition.GetDisplayName()}";
+            var timingText = FormatTiming(entity);
+            var primaryText = $"{timingText} 体調:{entity.Condition.GetDisplayName()}";
             var symptoms = string.Join("、", FromFlags(entity.SymptomFlags).Select(x => x.GetDisplayName()));
+            var start = entity.RecordTiming == RecordTiming.Custom && entity.RecordTime.HasValue
+                ? $"{entity.RecordDate:yyyy-MM-dd}T{entity.RecordTime.Value:HH\\:mm\\:ss}"
+                : entity.RecordDate.ToString("yyyy-MM-dd");
 
             return new HealthRecordCalendarEventDto
             {
                 Id = entity.Id.ToString(),
                 Title = primaryText,
-                Start = entity.RecordDate.ToString("yyyy-MM-dd"),
+                Start = start,
+                AllDay = entity.RecordTiming != RecordTiming.Custom,
                 Color = color.BackgroundColor,
                 BackgroundColor = color.BackgroundColor,
                 BorderColor = color.BorderColor,
@@ -230,12 +243,22 @@ namespace Phycock.Service
                     PrimaryText = primaryText,
                     SecondaryText = $"気分:{entity.Feeling.GetDisplayName()}",
                     NoteText = string.IsNullOrWhiteSpace(symptoms) ? null : symptoms,
-                    SortOrder = GetTimingSortOrder(entity.RecordTiming),
+                    SortOrder = GetTimingSortOrder(entity),
                 },
             };
         }
 
         /// <summary>統合カレンダーの並び順キー。1日の流れ上の代表時刻（分換算）を返す。</summary>
+        internal static int GetTimingSortOrder(HealthRecordEntity entity)
+        {
+            if (entity.RecordTiming == RecordTiming.Custom && entity.RecordTime.HasValue)
+            {
+                return entity.RecordTime.Value.Hour * 60 + entity.RecordTime.Value.Minute;
+            }
+
+            return GetTimingSortOrder(entity.RecordTiming);
+        }
+
         private static int GetTimingSortOrder(RecordTiming timing)
         {
             return timing switch
@@ -275,6 +298,7 @@ namespace Phycock.Service
                 UserId = entity.UserId,
                 RecordDate = entity.RecordDate,
                 RecordTiming = entity.RecordTiming,
+                RecordTime = entity.RecordTime ?? GetDefaultCustomTime(),
                 SelectedSymptoms = FromFlags(entity.SymptomFlags),
                 Condition = entity.Condition,
                 Feeling = entity.Feeling,
@@ -295,5 +319,19 @@ namespace Phycock.Service
                 .Where(x => x != SymptomType.None && (flags & (long)x) != 0)
                 .ToList();
         }
+
+        private static TimeOnly? NormalizeRecordTime(RecordTiming timing, TimeOnly? recordTime)
+            => timing == RecordTiming.Custom ? recordTime ?? GetDefaultCustomTime() : null;
+
+        private static TimeOnly GetDefaultCustomTime()
+        {
+            var now = DateTime.Now;
+            return new TimeOnly(now.Hour, now.Minute);
+        }
+
+        internal static string FormatTiming(HealthRecordEntity entity)
+            => entity.RecordTiming == RecordTiming.Custom && entity.RecordTime.HasValue
+                ? $"{entity.RecordTiming.GetDisplayName()} {entity.RecordTime.Value:HH\\:mm}"
+                : entity.RecordTiming.GetDisplayName();
     }
 }

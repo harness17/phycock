@@ -22,6 +22,9 @@ namespace Phycock.Entity
         /// <summary>記録タイミング。</summary>
         public RecordTiming RecordTiming { get; set; }
 
+        /// <summary>任意時刻。RecordTiming が Custom の場合のみ使用する。</summary>
+        public TimeOnly? RecordTime { get; set; }
+
         /// <summary>症状のビットフラグ。</summary>
         public long SymptomFlags { get; set; }
 

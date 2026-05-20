@@ -60,24 +60,35 @@ namespace Phycock.Repository
                 .AsNoTracking()
                 .Where(x => x.UserId == userId && !x.DelFlag)
                 .Where(x => x.RecordDate >= start && x.RecordDate < end)
-                .OrderBy(x => x.RecordTiming)
+                .ToList()
+                .OrderBy(GetTimingSortOrder)
                 .ThenBy(x => x.Id)
                 .ToList();
         }
 
         /// <summary>指定ユーザー・日付・タイミングの体調記録が存在するか確認する。</summary>
         public virtual bool ExistsByUserDateTiming(string userId, DateTime recordDate, RecordTiming recordTiming, long? excludeId = null)
+            => ExistsByUserDateTiming(userId, recordDate, recordTiming, null, excludeId);
+
+        /// <summary>指定ユーザー・日付・タイミング・任意時刻の体調記録が存在するか確認する。</summary>
+        public virtual bool ExistsByUserDateTiming(string userId, DateTime recordDate, RecordTiming recordTiming, TimeOnly? recordTime = null, long? excludeId = null)
         {
             var start = recordDate.Date;
             var end = start.AddDays(1);
 
-            return _context.HealthRecord
+            var query = _context.HealthRecord
                 .AsNoTracking()
                 .Where(x => x.UserId == userId && !x.DelFlag)
                 .Where(x => x.RecordDate >= start && x.RecordDate < end)
                 .Where(x => x.RecordTiming == recordTiming)
-                .Where(x => !excludeId.HasValue || x.Id != excludeId.Value)
-                .Any();
+                .Where(x => !excludeId.HasValue || x.Id != excludeId.Value);
+
+            if (recordTiming == RecordTiming.Custom)
+            {
+                query = query.Where(x => x.RecordTime == recordTime);
+            }
+
+            return query.Any();
         }
 
         /// <summary>指定ユーザー・指定期間の体調記録を取得する。</summary>
@@ -90,8 +101,9 @@ namespace Phycock.Repository
                 .AsNoTracking()
                 .Where(x => x.UserId == userId && !x.DelFlag)
                 .Where(x => x.RecordDate >= start && x.RecordDate < end)
+                .ToList()
                 .OrderBy(x => x.RecordDate)
-                .ThenBy(x => x.RecordTiming)
+                .ThenBy(GetTimingSortOrder)
                 .ThenBy(x => x.Id)
                 .ToList();
         }
@@ -106,11 +118,29 @@ namespace Phycock.Repository
                 .AsNoTracking()
                 .Where(x => !x.DelFlag)
                 .Where(x => x.RecordDate >= start && x.RecordDate < end)
+                .ToList()
                 .OrderBy(x => x.RecordDate)
                 .ThenBy(x => x.UserId)
-                .ThenBy(x => x.RecordTiming)
+                .ThenBy(GetTimingSortOrder)
                 .ThenBy(x => x.Id)
                 .ToList();
+        }
+
+        private static int GetTimingSortOrder(HealthRecordEntity entity)
+        {
+            if (entity.RecordTiming == RecordTiming.Custom && entity.RecordTime.HasValue)
+            {
+                return entity.RecordTime.Value.Hour * 60 + entity.RecordTime.Value.Minute;
+            }
+
+            return entity.RecordTiming switch
+            {
+                RecordTiming.Morning => 360,
+                RecordTiming.Noon => 510,
+                RecordTiming.Evening => 945,
+                RecordTiming.Night => 1439,
+                _ => 720,
+            };
         }
     }
 }

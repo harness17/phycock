@@ -12,7 +12,15 @@ status: active
 
 ## 進行中
 
-（現在、進行中のハンドオフはなし）
+### 2026-05-20 体調記録 任意時刻対応（Codex 実装、レビュー待ち）
+
+- 変更範囲: `HealthRecord` entity/viewmodel/service/repository/controller/view、`StatisticsService`/統計View、EF migration、関連 xUnit。
+- 実装概要: `RecordTiming.Custom` と `HealthRecord.RecordTime` を追加。定時タイミングは同日1件、任意時刻は同日同時刻のみ重複禁止にした。カレンダーイベントは任意時刻のみ `start` を日時化し、週次/月次統計にも任意時刻ラベルを表示する。
+- DB: `20260520012148_AddHealthRecordCustomTime` で `RecordTime time null` を追加し、一意 index を `(UserId, RecordDate, RecordTiming, RecordTime)` に変更。
+- verify: `dotnet test Phycock.slnx` 成功（107 passed / 0 warnings）。
+- 実動確認: `member1@sample.jp` に 2026-05-20 の定時1件、任意時刻 10:15/14:35 を投入。ログイン後 `HealthRecord/GetEvents` が時刻付きイベントを返し、`Statistics?weekStart=2026-05-17` の月次セルに任意時刻要約が出ることを確認。
+- 残リスク: ブラウザの視覚スクリーンショット確認は未実施。Claude Code 側でフォームの表示切替とカレンダー実描画を目視確認するとよい。
+- 次アクション: Claude Code レビュー後、問題なければ migration 適用前提で通常フローに戻す。
 
 ---
 

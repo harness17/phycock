@@ -24,6 +24,11 @@ namespace Phycock.Models
         [Display(Name = "記録タイミング")]
         public RecordTiming RecordTiming { get; set; } = RecordTiming.Morning;
 
+        /// <summary>任意時刻。</summary>
+        [DataType(DataType.Time)]
+        [Display(Name = "任意時刻")]
+        public TimeOnly? RecordTime { get; set; }
+
         /// <summary>登録済みのため選択できない記録タイミング。</summary>
         public List<RecordTiming> DisabledRecordTimings { get; set; } = new();
 
@@ -63,6 +68,12 @@ namespace Phycock.Models
 
         /// <summary>記録タイミング。</summary>
         public RecordTiming RecordTiming { get; set; }
+
+        /// <summary>任意時刻。</summary>
+        public TimeOnly? RecordTime { get; set; }
+
+        /// <summary>記録タイミング表示文字列。</summary>
+        public string TimingLabel { get; set; } = "";
 
         /// <summary>症状表示文字列。</summary>
         public string Symptoms { get; set; } = "";

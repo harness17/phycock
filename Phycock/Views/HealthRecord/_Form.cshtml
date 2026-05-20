@@ -29,6 +29,11 @@
             </select>
             <span asp-validation-for="RecordTiming" class="text-danger"></span>
         </div>
+        <div class="col-md-4" data-health-record-custom-time-wrap>
+            <label asp-for="RecordTime" class="form-label"></label>
+            <input asp-for="RecordTime" type="time" class="form-control time-focus-input" step="60" data-health-record-custom-time />
+            <span asp-validation-for="RecordTime" class="text-danger"></span>
+        </div>
         <div class="col-md-2">
             <label asp-for="Condition" class="form-label"></label>
             <select asp-for="Condition" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.ConditionLevel>()" class="form-select"></select>
@@ -73,12 +78,45 @@
     document.addEventListener('DOMContentLoaded', function () {
         const dateInput = document.getElementById('RecordDate');
         const timingSelect = document.querySelector('[data-health-record-timing-select]');
+        const customTimeWrap = document.querySelector('[data-health-record-custom-time-wrap]');
+        const customTimeInput = document.querySelector('[data-health-record-custom-time]');
         const idInput = document.getElementById('Id');
         if (!dateInput || !timingSelect) return;
+
+        const customTimingValue = '@((int)RecordTiming.Custom)';
+
+        if (window.PhycockTimeInput) {
+            window.PhycockTimeInput.init(document);
+        }
+
+        updateCustomTimeVisibility();
 
         dateInput.addEventListener('change', function () {
             refreshDisabledTimings();
         });
+        timingSelect.addEventListener('change', function () {
+            updateCustomTimeVisibility();
+        });
+
+        function updateCustomTimeVisibility() {
+            const isCustom = timingSelect.value === customTimingValue;
+            if (customTimeWrap) {
+                customTimeWrap.classList.toggle('d-none', !isCustom);
+            }
+            if (customTimeInput) {
+                customTimeInput.disabled = !isCustom;
+                if (isCustom && !customTimeInput.value) {
+                    customTimeInput.value = currentTimeValue();
+                }
+            }
+        }
+
+        function currentTimeValue() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            return hh + ':' + mm;
+        }
 
         function refreshDisabledTimings() {
             const params = new URLSearchParams({ recordDate: dateInput.value });
@@ -102,6 +140,10 @@
             Array.from(timingSelect.options).forEach(function (option) {
                 option.disabled = disabledValues.includes(option.value);
             });
+            const customOption = Array.from(timingSelect.options).find(function (option) {
+                return option.value === customTimingValue;
+            });
+            if (customOption) customOption.disabled = false;
 
             if (timingSelect.selectedOptions.length > 0 && timingSelect.selectedOptions[0].disabled) {
                 const firstEnabled = Array.from(timingSelect.options).find(function (option) {
@@ -109,6 +151,7 @@
                 });
                 if (firstEnabled) timingSelect.value = firstEnabled.value;
             }
+            updateCustomTimeVisibility();
         }
     });
 </script>

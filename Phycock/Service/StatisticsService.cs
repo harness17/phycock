@@ -150,7 +150,10 @@ namespace Phycock.Service
                     ScheduleDayClass = inMonth ? daily.ScheduleDayClass : "rest",
                     ScheduleSummary = inMonth && daily.ScheduleSummaryLines.Count > 0
                         ? string.Join("、", daily.ScheduleSummaryLines)
-                        : "予定なし"
+                        : "予定なし",
+                    HealthTimingSummary = inMonth && daily.HealthRecords.Count > 0
+                        ? string.Join("、", daily.HealthRecords.Select(x => x.TimingLabel))
+                        : "記録なし"
                 });
             }
 
@@ -262,7 +265,7 @@ namespace Phycock.Service
         {
             var dayDate = DateOnly.FromDateTime(day);
             var dailyHealth = allHealth.Where(x => x.RecordDate.Date == day)
-                                       .OrderBy(x => x.RecordTiming)
+                                       .OrderBy(HealthRecordService.GetTimingSortOrder)
                                        .ThenBy(x => x.CreateDate)
                                        .ToList();
             var dailySchedule = allSchedule.Where(x => x.Date == dayDate)
@@ -313,7 +316,7 @@ namespace Phycock.Service
             {
                 dto.HealthRecords.Add(new HealthRecordItemDto
                 {
-                    TimingLabel = h.RecordTiming.GetDisplayName(),
+                    TimingLabel = HealthRecordService.FormatTiming(h),
                     ConditionLabel = ((int)h.Condition).ToString(),
                     FeelingLabel = ((int)h.Feeling).ToString(),
                     SymptomsLabel = FormatSymptoms(h.SymptomFlags),

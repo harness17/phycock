@@ -48,7 +48,7 @@
                         @foreach (var record in Model.TodayHealthRecords)
                         {
                             <li class="list-group-item px-0">
-                                <div class="fw-semibold">@record.RecordTiming.GetDisplayName()</div>
+                                <div class="fw-semibold">@record.TimingLabel</div>
                                 <div class="small">体調: @record.Condition.GetDisplayName() / 気分: @record.Feeling.GetDisplayName()</div>
                             </li>
                         }

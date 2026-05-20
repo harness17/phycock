@@ -161,11 +161,17 @@ namespace Phycock.Controllers
 
         private void ValidateDuplicate(HealthRecordFormViewModel model)
         {
-            if (_service.IsDuplicate(model.UserId, model.RecordDate, model.RecordTiming, model.Id == 0 ? null : model.Id))
+            if (model.RecordTiming == Phycock.Entity.Enums.RecordTiming.Custom && !model.RecordTime.HasValue)
+            {
+                var now = DateTime.Now;
+                model.RecordTime = new TimeOnly(now.Hour, now.Minute);
+            }
+
+            if (_service.IsDuplicate(model.UserId, model.RecordDate, model.RecordTiming, model.RecordTime, model.Id == 0 ? null : model.Id))
                 AddDuplicateModelError();
         }
 
         private void AddDuplicateModelError()
-            => ModelState.AddModelError(nameof(HealthRecordFormViewModel.RecordTiming), "同じ日の同じタイミングの体調記録は既に登録されています。");
+            => ModelState.AddModelError(nameof(HealthRecordFormViewModel.RecordTiming), "同じ日の同じタイミングまたは任意時刻の体調記録は既に登録されています。");
     }
 }
