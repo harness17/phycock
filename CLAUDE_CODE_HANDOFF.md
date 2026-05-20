@@ -12,6 +12,15 @@ status: active
 
 ## 進行中
 
+### 2026-05-20 PDF出力 ローディング表示（Codex 実装、レビュー待ち）
+
+- 変更範囲: `Phycock/Views/Statistics/Index.cshtml`
+- 実装概要: 統計画面の PDF 出力ボタンにスピナー付きの「作成中...」表示を追加。クリック後はボタンを disabled / `aria-busy` にし、`fetch` で PDF を取得して Blob ダウンロードすることで完了・失敗時に表示を戻す。PDF 以外のレスポンスは保存せず、ログイン状態確認のエラーとして扱う。
+- verify: `dotnet build Phycock.slnx` 成功（0 warnings）。`dotnet test Phycock.slnx` 成功（106 passed）。
+- 実動確認: `agent-browser` が PATH になくブラウザ目視確認は未実施。Razor 構文と JS 差分は確認済み。
+- 残リスク: 実ブラウザでのダウンロード完了挙動、ファイル名復元、ボタン幅の見え方は Claude Code 側で目視確認するとよい。
+- 次アクション: Claude Code レビューで統計画面から週次/月次 PDF を1回ずつ出力し、ローディング表示と二重押下防止を確認する。
+
 ### 2026-05-20 体調記録 任意時刻対応（Codex 実装、レビュー待ち）
 
 - 変更範囲: `HealthRecord` entity/viewmodel/service/repository/controller/view、`StatisticsService`/統計View、EF migration、関連 xUnit。

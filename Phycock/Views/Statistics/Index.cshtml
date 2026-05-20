@@ -39,7 +39,13 @@
         <input id="weekStart" type="date" class="form-control" />
         <button id="reloadStats" type="button" class="btn btn-outline-primary text-nowrap">更新</button>
         <button id="exportPdf" type="button" class="btn btn-outline-secondary text-nowrap">
-            <i class="fa-regular fa-file-pdf"></i> PDF出力
+            <span class="pdf-export-idle">
+                <i class="fa-regular fa-file-pdf"></i> PDF出力
+            </span>
+            <span class="pdf-export-loading d-none">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                作成中...
+            </span>
         </button>
     </div>
 </div>
@@ -796,12 +802,68 @@
                 window.location.href = '@Url.Action("Index", "Statistics")' + '?weekStart=' + encodeURIComponent(ws);
             });
             // PDF出力: アクティブなタブ（週次/月次）に応じて出力対象を切り替える
-            $('#exportPdf').on('click', function () {
+            $('#exportPdf').on('click', async function () {
+                const button = this;
+                if (button.disabled) {
+                    return;
+                }
+
                 const ws = $('#weekStart').val();
                 const activeTab = document.querySelector('.nav-tabs .nav-link.active');
                 const section = activeTab?.dataset.bsTarget === '#monthly' ? 'monthly' : 'weekly';
-                window.location.href = '@Url.Action("ExportPdf", "Statistics")'
+                const url = '@Url.Action("ExportPdf", "Statistics")'
                     + '?weekStart=' + encodeURIComponent(ws) + '&section=' + section;
+
+                const setLoading = (isLoading) => {
+                    button.disabled = isLoading;
+                    button.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+                    button.querySelector('.pdf-export-idle')?.classList.toggle('d-none', isLoading);
+                    button.querySelector('.pdf-export-loading')?.classList.toggle('d-none', !isLoading);
+                };
+
+                const getDownloadFileName = (response) => {
+                    const disposition = response.headers.get('content-disposition') ?? '';
+                    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+                    if (utf8Match) {
+                        return decodeURIComponent(utf8Match[1]);
+                    }
+
+                    const asciiMatch = disposition.match(/filename="?([^";]+)"?/i);
+                    return asciiMatch ? asciiMatch[1] : 'Phycock_statistics.pdf';
+                };
+
+                setLoading(true);
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/pdf' }
+                    });
+
+                    if (!response.ok) {
+                        const message = await response.text();
+                        throw new Error(message || 'PDF出力に失敗しました。しばらく時間をおいてから再度お試しください。');
+                    }
+
+                    const contentType = response.headers.get('content-type') ?? '';
+                    if (!contentType.toLowerCase().includes('application/pdf')) {
+                        throw new Error('PDFを取得できませんでした。ログイン状態を確認してから再度お試しください。');
+                    }
+
+                    const blob = await response.blob();
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = getDownloadFileName(response);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    URL.revokeObjectURL(downloadUrl);
+                } catch (error) {
+                    alert(error instanceof Error ? error.message : 'PDF出力に失敗しました。しばらく時間をおいてから再度お試しください。');
+                } finally {
+                    setLoading(false);
+                }
             });
             createWeeklyReportSampleChart();
             createWeeklyTimelineSampleChart();
