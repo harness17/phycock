@@ -390,6 +390,7 @@
 
         // 週次・月次共用の複合チャート設定（棒=睡眠内訳 / 折れ線=体調・気分）
         function reportChartConfig(chartData) {
+            const sleepHoursAxisMax = 12;
             const data = {
                 labels: chartData.labels,
                 datasets: [
@@ -474,7 +475,7 @@
                         position: 'left',
                         stacked: true,
                         min: 0,
-                        max: 10,
+                        max: sleepHoursAxisMax,
                         title: { display: true, text: '睡眠時間' }
                     },
                     conditionScore: {

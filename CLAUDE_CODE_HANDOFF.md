@@ -12,6 +12,13 @@ status: active
 
 ## 進行中
 
+### 2026-05-20 週次・月次レポート 睡眠時間軸 12h 化（Codex 実装、レビュー待ち）
+
+- 変更範囲: `Phycock/Views/Statistics/Index.cshtml`
+- 実装概要: 週次・月次の体調・気分・睡眠複合チャートで共有している `reportChartConfig` の睡眠時間 Y 軸上限を 10h から 12h に変更。画面表示と PDF 用 print 表示は同じ設定を使う。
+- verify: `dotnet build Phycock.slnx` 成功（0 warnings）。`dotnet test Phycock.slnx` 成功（106 passed）。
+- 残リスク: ブラウザ目視確認は未実施。Claude Code 側で週次・月次タブまたは PDF 出力時に睡眠軸が 12h まで表示されることを確認するとよい。
+
 ### 2026-05-20 PDF出力 ローディング表示（Codex 実装、レビュー待ち）
 
 - 変更範囲: `Phycock/Views/Statistics/Index.cshtml`
