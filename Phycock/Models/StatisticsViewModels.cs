@@ -101,7 +101,6 @@ namespace Phycock.Models
         public SleepLevel SleepLevel { get; set; }
         public string ScheduleDayClass { get; set; } = "rest";
         public string ScheduleSummary { get; set; } = "予定なし";
-        public string HealthTimingSummary { get; set; } = "記録なし";
     }
 
     /// <summary>

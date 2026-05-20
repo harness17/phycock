@@ -331,7 +331,7 @@ namespace Phycock.Service
 
         internal static string FormatTiming(HealthRecordEntity entity)
             => entity.RecordTiming == RecordTiming.Custom && entity.RecordTime.HasValue
-                ? $"{entity.RecordTiming.GetDisplayName()} {entity.RecordTime.Value:HH\\:mm}"
+                ? $"{entity.RecordTime.Value:HH\\:mm}"
                 : entity.RecordTiming.GetDisplayName();
     }
 }

@@ -244,7 +244,7 @@ namespace Tests.HealthRecord
             var item = Assert.Single(result);
             Assert.Equal("2026-05-03T14:35:00", item.Start);
             Assert.False(item.AllDay);
-            Assert.Equal("任意時刻 14:35 体調:普通", item.Title);
+            Assert.Equal("14:35 体調:普通", item.Title);
         }
 
         [Fact]

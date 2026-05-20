@@ -150,10 +150,7 @@ namespace Phycock.Service
                     ScheduleDayClass = inMonth ? daily.ScheduleDayClass : "rest",
                     ScheduleSummary = inMonth && daily.ScheduleSummaryLines.Count > 0
                         ? string.Join("、", daily.ScheduleSummaryLines)
-                        : "予定なし",
-                    HealthTimingSummary = inMonth && daily.HealthRecords.Count > 0
-                        ? string.Join("、", daily.HealthRecords.Select(x => x.TimingLabel))
-                        : "記録なし"
+                        : "予定なし"
                 });
             }
 
