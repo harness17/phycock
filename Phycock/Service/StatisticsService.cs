@@ -387,18 +387,20 @@ namespace Phycock.Service
                     : entry.ActivityType.GetDisplayName();
 
                 // テーブル「通所」列のサマリ。プライベートは通所実績ではないので種別名で表示する。
+                string summary;
                 if (entry.ActivityType == ActivityType.Private)
                 {
-                    summaryParts.Add($"{sessionPrefix} プライベート");
+                    summary = $"{sessionPrefix} プライベート";
                 }
                 else if (entry.Status == ScheduleStatus.Planned)
                 {
-                    summaryParts.Add($"{sessionPrefix} {venue}予定");
+                    summary = $"{sessionPrefix} {venue}予定";
                 }
                 else
                 {
-                    summaryParts.Add($"{sessionPrefix} {statusName}");
+                    summary = $"{sessionPrefix} {statusName}";
                 }
+                summaryParts.Add(summary);
 
                 // ストリップ
                 dto.ScheduleStrip.Add(new ScheduleStripItemDto
@@ -406,6 +408,25 @@ namespace Phycock.Service
                     SessionLabel = $"{sessionPrefix} {venue}",
                     DetailLabel = $"{statusName} / {activityName}",
                     StatusClass = MapStatusClass(entry.Status)
+                });
+
+                // 振り返り（Notes）が入力されている予定のみ抽出
+                var reflectionText = string.IsNullOrWhiteSpace(entry.Notes) ? null : entry.Notes;
+                if (reflectionText != null)
+                {
+                    dto.ScheduleReflections.Add(new ScheduleReflectionItemDto
+                    {
+                        SessionLabel = sessionPrefix,
+                        Note = reflectionText
+                    });
+                }
+
+                // 通所セル表示用ペア。予定＋振り返りをセッション単位で順序付け描画する。
+                dto.ScheduleRows.Add(new ScheduleRowItemDto
+                {
+                    Summary = summary,
+                    SessionLabel = sessionPrefix,
+                    Reflection = reflectionText
                 });
             }
 

@@ -24,6 +24,12 @@ namespace Phycock.Models
 
         /// <summary>月次カレンダー用の日別集計。</summary>
         public MonthlyCalendarDto MonthlyCalendar { get; set; } = new();
+
+        /// <summary>週次レポートに紐づく自己所感（未登録なら空）。</summary>
+        public PeriodReflectionViewModel WeeklyReflection { get; set; } = new();
+
+        /// <summary>月次レポートに紐づく自己所感（未登録なら空）。</summary>
+        public PeriodReflectionViewModel MonthlyReflection { get; set; } = new();
     }
 
     /// <summary>月次カレンダー DTO。</summary>
@@ -135,6 +141,10 @@ namespace Phycock.Models
         public List<ScheduleStripItemDto> ScheduleStrip { get; set; } = new();
         public List<HealthRecordItemDto> HealthRecords { get; set; } = new();
         public List<SleepRecordItemDto> SleepRecords { get; set; } = new();
+        /// <summary>通所予定の振り返り（Notes）一覧。入力がある予定のみ。</summary>
+        public List<ScheduleReflectionItemDto> ScheduleReflections { get; set; } = new();
+        /// <summary>通所セル表示用：セッション単位の予定＋振り返りペア。</summary>
+        public List<ScheduleRowItemDto> ScheduleRows { get; set; } = new();
     }
 
     /// <summary>スケジュールストリップの1項目。</summary>
@@ -143,6 +153,29 @@ namespace Phycock.Models
         public string SessionLabel { get; set; } = "";   // "AM 通所" "PM 在宅" "予定なし"
         public string DetailLabel { get; set; } = "";    // "通所済み / ヘルスケア"
         public string StatusClass { get; set; } = "status-none";  // status-attended 等
+    }
+
+    /// <summary>通所予定の振り返り表示用 1件。</summary>
+    public class ScheduleReflectionItemDto
+    {
+        /// <summary>「AM」「PM」「終日」のいずれか。</summary>
+        public string SessionLabel { get; set; } = "";
+        /// <summary>振り返り本文。</summary>
+        public string Note { get; set; } = "";
+    }
+
+    /// <summary>
+    /// 通所セルの1行（セッション単位）。予定本文と振り返り文を1ペアで保持し、
+    /// 「AM予定 → AM振り返り → PM予定 → PM振り返り」の順序で描画させる。
+    /// </summary>
+    public class ScheduleRowItemDto
+    {
+        /// <summary>予定の表示文（例: 「AM 通所予定」「PM 在宅」）。</summary>
+        public string Summary { get; set; } = "";
+        /// <summary>セッションラベル（例: 「AM」「PM」「終日」）。</summary>
+        public string SessionLabel { get; set; } = "";
+        /// <summary>振り返り本文。未入力なら null。</summary>
+        public string? Reflection { get; set; }
     }
 
     /// <summary>体調記録1件の表示用。</summary>

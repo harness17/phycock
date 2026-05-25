@@ -21,16 +21,19 @@ namespace Phycock.Controllers
         private readonly StatisticsService _service;
         private readonly UserManagementService _userManagementService;
         private readonly PdfExportService _pdfExportService;
+        private readonly PeriodReflectionService _periodReflectionService;
         private readonly Logger _logger = Logger.GetLogger();
 
         public StatisticsController(
             StatisticsService service,
             UserManagementService userManagementService,
-            PdfExportService pdfExportService)
+            PdfExportService pdfExportService,
+            PeriodReflectionService periodReflectionService)
         {
             _service = service;
             _userManagementService = userManagementService;
             _pdfExportService = pdfExportService;
+            _periodReflectionService = periodReflectionService;
         }
 
         [HttpGet]
@@ -40,10 +43,17 @@ namespace Phycock.Controllers
             {
                 var ws = NormalizeWeekStart(weekStart);
                 var userId = await ResolveTargetUserIdAsync();
+                // 月次カレンダー対象月は「入力された日付の月」を使う。
+                // NormalizeWeekStart は前の日曜日へ寄せるため、月初付近を入力すると前月へずれてしまう。
+                // 月次タブで「2026-04-01 を指定 → 4月を表示」が直感に合う。
+                var rawDate = (weekStart ?? DateTime.Today).Date;
+                var monthStart = new DateTime(rawDate.Year, rawDate.Month, 1);
                 var vm = new StatisticsViewModel
                 {
                     WeeklyReport = _service.GetWeeklyReport(userId, ws),
-                    MonthlyCalendar = _service.GetMonthlyCalendar(userId, ws.Year, ws.Month)
+                    MonthlyCalendar = _service.GetMonthlyCalendar(userId, rawDate.Year, rawDate.Month),
+                    WeeklyReflection = _periodReflectionService.GetOrEmpty(userId, Entity.Enums.PeriodType.Weekly, ws),
+                    MonthlyReflection = _periodReflectionService.GetOrEmpty(userId, Entity.Enums.PeriodType.Monthly, monthStart)
                 };
                 return View(vm);
             }

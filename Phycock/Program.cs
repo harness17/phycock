@@ -99,6 +99,10 @@ builder.Services.AddScoped<Phycock.Service.SleepRecordService>();
 builder.Services.AddScoped<Phycock.Repository.ScheduleEntryRepository>();
 builder.Services.AddScoped<Phycock.Service.ScheduleEntryService>();
 
+// 期間所感（週次／月次レポートの自己所感）
+builder.Services.AddScoped<Phycock.Repository.PeriodReflectionRepository>();
+builder.Services.AddScoped<Phycock.Service.PeriodReflectionService>();
+
 // ダッシュボード・統計
 builder.Services.AddScoped<Phycock.Service.DashboardService>();
 builder.Services.AddScoped<Phycock.Service.StatisticsService>();

@@ -38,6 +38,11 @@ namespace Phycock.Common
                 .HasIndex(x => new { x.UserId, x.RecordDate, x.RecordTiming, x.RecordTime })
                 .IsUnique()
                 .HasFilter("[DelFlag] = 0");
+
+            modelBuilder.Entity<PeriodReflectionEntity>()
+                .HasIndex(x => new { x.UserId, x.PeriodType, x.PeriodStart })
+                .IsUnique()
+                .HasFilter("[DelFlag] = 0");
         }
 
         #region DbSet
@@ -55,6 +60,9 @@ namespace Phycock.Common
 
         // 通所予定
         public DbSet<ScheduleEntryEntity> ScheduleEntry { get; set; }
+
+        // 期間所感（週次／月次レポートの自己所感）
+        public DbSet<PeriodReflectionEntity> PeriodReflection { get; set; }
 
         #endregion
     }

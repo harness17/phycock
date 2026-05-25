@@ -10,10 +10,26 @@
     var weekStartIso = weekStart.ToString("yyyy-MM-dd");
     var report = Model.WeeklyReport;
     var monthlyCalendar = Model.MonthlyCalendar;
+    var weeklyReflection = Model.WeeklyReflection;
+    var monthlyReflection = Model.MonthlyReflection;
+    var monthStartIso = new DateTime(monthlyCalendar.Year, monthlyCalendar.Month, 1).ToString("yyyy-MM-dd");
+
+    // 所感の各項目（ラベル + 値）を順序固定で列挙するためのヘルパー
+    (string Label, string? Value)[] ReflectionRows(Phycock.Models.PeriodReflectionViewModel r) => new[]
+    {
+        ("自己評価", r.SelfEvaluation),
+        ("負担", r.Burden),
+        ("改善案", r.Improvement),
+        ("食欲", r.Appetite),
+        ("睡眠", r.Sleep)
+    };
     // PDF出力時の対象セクション（print=1 のときのみ有効）。monthly 以外は weekly 扱い。
     var printSection = Context.Request.Query["section"] == "monthly" ? "monthly" : "weekly";
     var printWeekly = !isPrint || printSection == "weekly";
     var printMonthly = !isPrint || printSection == "monthly";
+    // ?tab=monthly のときは月次タブを初期 active にする（更新ボタンからの遷移用）
+    var initialTab = Context.Request.Query["tab"] == "monthly" ? "monthly" : "weekly";
+    var weeklyActive = initialTab == "weekly";
     // 月次チャートで週区切りの縦線を引く位置（最初の日曜にあたるデータ点の index）
     var monthFirstDow = (int)new DateTime(monthlyCalendar.Year, monthlyCalendar.Month, 1).DayOfWeek;
     var monthlyWeekStartOffset = (7 - monthFirstDow) % 7;
@@ -52,10 +68,10 @@
 
 <ul class="nav nav-tabs mb-3" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#weekly" type="button" role="tab">週次</button>
+        <button class="nav-link @(weeklyActive ? "active" : "")" data-bs-toggle="tab" data-bs-target="#weekly" type="button" role="tab">週次</button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">月次</button>
+        <button class="nav-link @(weeklyActive ? "" : "active")" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">月次</button>
     </li>
 </ul>
 }
@@ -63,7 +79,33 @@
 <div class="tab-content">
     @if (printWeekly)
     {
-    <div class="@(isPrint ? "" : "tab-pane fade show active")" id="weekly" role="tabpanel">
+    <div class="@(isPrint ? "" : weeklyActive ? "tab-pane fade show active" : "tab-pane fade")" id="weekly" role="tabpanel">
+        @{
+            var weeklyRows = ReflectionRows(weeklyReflection);
+            var weeklyHasInput = weeklyRows.Any(r => !string.IsNullOrWhiteSpace(r.Value));
+        }
+        @if (!isPrint)
+        {
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                        data-bs-toggle="offcanvas" data-bs-target="#weeklyReflectionOffcanvas"
+                        aria-controls="weeklyReflectionOffcanvas">
+                    <i class="fa-regular fa-pen-to-square"></i> 週次の所感を入力
+                </button>
+            </div>
+        }
+
+        @* 週次の所感（タブ最上部・PDFでは1ページ目）。
+           id を付けて Save 成功後に Partial で innerHTML 置換する。 *@
+        <div id="weeklyReflectionContainer" data-reflection-period-type="Weekly" data-reflection-period-start="@weekStartIso">
+            @await Html.PartialAsync("_PeriodReflectionDisplay", new Phycock.Views.Statistics.PeriodReflectionDisplayModel
+            {
+                Title = "週次の所感",
+                Vm = weeklyReflection,
+                ExtraClass = "period-reflection-page-break"
+            })
+        </div>
+
         <section class="weekly-report-sample mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
@@ -124,9 +166,18 @@
                                 <td>@(d.NightSleepHours > 0 ? $"{d.NightSleepHours:0.0}h" : "-")</td>
                                 <td>@(d.OtherSleepHours > 0 ? $"{d.OtherSleepHours:0.0}h" : "-")</td>
                                 <td>
-                                    @foreach (var line in d.ScheduleSummaryLines)
+                                    @* セッション単位で「予定 → 振り返り」の順に並べる（AM予定→AM振り返り→PM予定→PM振り返り） *@
+                                    @if (d.ScheduleRows.Count == 0)
                                     {
-                                        <div>@line</div>
+                                        <div>予定なし</div>
+                                    }
+                                    @foreach (var row in d.ScheduleRows)
+                                    {
+                                        <div>@row.Summary</div>
+                                        if (!string.IsNullOrEmpty(row.Reflection))
+                                        {
+                                            <div class="record-memo">@row.SessionLabel 振り返り: @row.Reflection</div>
+                                        }
                                     }
                                 </td>
                                 <td>
@@ -158,7 +209,11 @@
                                         <div class="record-note">
                                             <strong>@s.TypeLabel</strong>
                                             <span>
-                                                @($"{s.Hours:0.0}h")@(string.IsNullOrEmpty(s.Memo) ? "" : $" / {s.Memo}")
+                                                @($"{s.Hours:0.0}h")
+                                                @if (!string.IsNullOrEmpty(s.Memo))
+                                                {
+                                                    <span class="record-memo">メモ: @s.Memo</span>
+                                                }
                                             </span>
                                         </div>
                                     }
@@ -194,7 +249,32 @@
     }
     @if (printMonthly)
     {
-    <div class="@(isPrint ? "" : "tab-pane fade")" id="monthly" role="tabpanel">
+    <div class="@(isPrint ? "" : weeklyActive ? "tab-pane fade" : "tab-pane fade show active")" id="monthly" role="tabpanel">
+        @{
+            var monthlyRows = ReflectionRows(monthlyReflection);
+            var monthlyHasInput = monthlyRows.Any(r => !string.IsNullOrWhiteSpace(r.Value));
+        }
+        @if (!isPrint)
+        {
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                        data-bs-toggle="offcanvas" data-bs-target="#monthlyReflectionOffcanvas"
+                        aria-controls="monthlyReflectionOffcanvas">
+                    <i class="fa-regular fa-pen-to-square"></i> 月次の所感を入力
+                </button>
+            </div>
+        }
+
+        @* 月次の所感（タブ最上部・PDFでは1ページ目）。 *@
+        <div id="monthlyReflectionContainer" data-reflection-period-type="Monthly" data-reflection-period-start="@monthStartIso">
+            @await Html.PartialAsync("_PeriodReflectionDisplay", new Phycock.Views.Statistics.PeriodReflectionDisplayModel
+            {
+                Title = "月次の所感",
+                Vm = monthlyReflection,
+                ExtraClass = "period-reflection-page-break"
+            })
+        </div>
+
         <section class="monthly-calendar mb-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
@@ -342,9 +422,78 @@
                 </div>
             }
         </section>
+
     </div>
     }
 </div>
+
+@* 週次・月次の所感入力用フロート（offcanvas）。レポート閲覧中も裏で入力できる *@
+@{
+    (string OffcanvasId, string Title, Phycock.Models.PeriodReflectionViewModel Vm, string PeriodTypeName, string PeriodStartIso)[] offcanvasDefs = !isPrint
+        ? new[]
+        {
+            ("weeklyReflectionOffcanvas",
+                $"週次の所感（{weekStart:yyyy/MM/dd} 〜 {weekStart.AddDays(6):yyyy/MM/dd}）",
+                weeklyReflection, "Weekly", weekStartIso),
+            ("monthlyReflectionOffcanvas",
+                $"月次の所感（{monthlyCalendar.Year}/{monthlyCalendar.Month:00}）",
+                monthlyReflection, "Monthly", monthStartIso)
+        }
+        : Array.Empty<(string, string, Phycock.Models.PeriodReflectionViewModel, string, string)>();
+}
+@foreach (var d in offcanvasDefs)
+{
+    @* scroll=true: 背面のレポートをスクロール可能 / backdrop=false: 暗幕無しで両方見ながら入力できる *@
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="@d.OffcanvasId" aria-labelledby="@(d.OffcanvasId)Label"
+         data-bs-scroll="true" data-bs-backdrop="false" style="width:480px; max-width:90vw;">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="@(d.OffcanvasId)Label">@d.Title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="閉じる"></button>
+        </div>
+        <div class="offcanvas-body">
+            @* 保存成功時に非同期で書き換える対象コンテナの id を data-target-container に持つ *@
+            <form class="period-reflection-form" data-period-type="@d.PeriodTypeName" data-period-start="@d.PeriodStartIso"
+                  data-target-container="@(d.PeriodTypeName == "Weekly" ? "weeklyReflectionContainer" : "monthlyReflectionContainer")">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="PeriodType" value="@d.PeriodTypeName" />
+                <input type="hidden" name="PeriodStart" value="@d.PeriodStartIso" />
+                <div class="alert alert-danger d-none reflection-error" role="alert"></div>
+                <div class="alert alert-success d-none reflection-saved" role="alert">保存しました</div>
+
+                <div class="mb-3">
+                    <label class="form-label">自己評価</label>
+                    <textarea name="SelfEvaluation" class="form-control" rows="3" maxlength="1000">@d.Vm.SelfEvaluation</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">負担</label>
+                    <textarea name="Burden" class="form-control" rows="3" maxlength="1000">@d.Vm.Burden</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">改善案</label>
+                    <textarea name="Improvement" class="form-control" rows="3" maxlength="1000">@d.Vm.Improvement</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">食欲</label>
+                    <textarea name="Appetite" class="form-control" rows="3" maxlength="1000">@d.Vm.Appetite</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">睡眠</label>
+                    <textarea name="Sleep" class="form-control" rows="3" maxlength="1000">@d.Vm.Sleep</textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">閉じる</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="reflection-submit-idle">保存</span>
+                        <span class="reflection-submit-loading d-none">
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                            保存中...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -797,10 +946,26 @@
             }));
         } else {
             $('#weekStart').val(currentWeekStart);
-            // 「更新」: 週次レポートはサーバー再取得が必要なのでページ遷移する
+            // 「更新」: 週次レポートはサーバー再取得が必要なのでページ遷移する。
+            // 現在表示中のタブ（週次/月次）を維持するため tab クエリを付与する。
+            // 月次タブで日付を変えた場合は、その日付を含む月の月初へ正規化してから遷移し、
+            // 結果として月次タブのまま該当月のカレンダーが表示されるようにする。
             $('#reloadStats').on('click', function () {
                 const ws = $('#weekStart').val();
-                window.location.href = '@Url.Action("Index", "Statistics")' + '?weekStart=' + encodeURIComponent(ws);
+                const activeTab = document.querySelector('.nav-tabs .nav-link.active');
+                const tab = activeTab?.dataset.bsTarget === '#monthly' ? 'monthly' : 'weekly';
+                // 月次タブのときは選択日付を月初に正規化して送る（月単位で再描画させる）
+                let wsParam = ws;
+                if (tab === 'monthly' && ws) {
+                    const d = new Date(ws + 'T00:00:00');
+                    if (!isNaN(d.getTime())) {
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        wsParam = `${y}-${m}-01`;
+                    }
+                }
+                window.location.href = '@Url.Action("Index", "Statistics")'
+                    + '?weekStart=' + encodeURIComponent(wsParam) + '&tab=' + tab;
             });
             // PDF出力: アクティブなタブ（週次/月次）に応じて出力対象を切り替える
             $('#exportPdf').on('click', async function () {
@@ -870,6 +1035,75 @@
             createWeeklyTimelineSampleChart();
             createMonthlyReportChart();
             createSleepConditionBandChart();
+
+            // ───────────── 期間所感（週次・月次）の保存処理 ─────────────
+            // offcanvas 内の form を Ajax 送信する。成功時は location.reload で
+            // レポート本体に所感を即時反映する（既存PDF/JSと干渉しない最小実装）。
+            document.querySelectorAll('.period-reflection-form').forEach(function (form) {
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const errorBox = form.querySelector('.reflection-error');
+                    const savedBox = form.querySelector('.reflection-saved');
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    const idleLabel = form.querySelector('.reflection-submit-idle');
+                    const loadingLabel = form.querySelector('.reflection-submit-loading');
+                    errorBox.classList.add('d-none');
+                    savedBox.classList.add('d-none');
+                    submitBtn.disabled = true;
+                    idleLabel.classList.add('d-none');
+                    loadingLabel.classList.remove('d-none');
+
+                    try {
+                        const formData = new FormData(form);
+                        const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+                        const res = await fetch('@Url.Action("Save", "PeriodReflection")', {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-CSRF-TOKEN': token },
+                            credentials: 'same-origin'
+                        });
+                        if (!res.ok) {
+                            let msg = '保存に失敗しました。';
+                            try {
+                                const json = await res.json();
+                                if (json.errors) {
+                                    const all = Object.values(json.errors).flat();
+                                    if (all.length > 0) msg = all.join(' / ');
+                                } else if (json.error) {
+                                    msg = json.error;
+                                }
+                            } catch { /* fallthrough */ }
+                            errorBox.textContent = msg;
+                            errorBox.classList.remove('d-none');
+                            return;
+                        }
+                        savedBox.classList.remove('d-none');
+                        // 非同期で所感表示パーシャルを取り直し、現在開いているタブを切り替えずに
+                        // 該当コンテナの中身だけ差し替える（タブ状態・スクロール位置を保持）。
+                        try {
+                            const periodType = form.dataset.periodType;
+                            const periodStart = form.dataset.periodStart;
+                            const partialUrl = `@Url.Action("GetPartial", "PeriodReflection")?periodType=${encodeURIComponent(periodType)}&periodStart=${encodeURIComponent(periodStart)}`;
+                            const partRes = await fetch(partialUrl, { credentials: 'same-origin' });
+                            if (partRes.ok) {
+                                const html = await partRes.text();
+                                const containerId = form.dataset.targetContainer;
+                                const container = document.getElementById(containerId);
+                                if (container) container.innerHTML = html;
+                            }
+                        } catch { /* 表示更新失敗は無視（次回再表示で同期される） */ }
+                        // 数秒で「保存しました」を消す
+                        setTimeout(function () { savedBox.classList.add('d-none'); }, 2000);
+                    } catch (err) {
+                        errorBox.textContent = '通信エラーが発生しました。';
+                        errorBox.classList.remove('d-none');
+                    } finally {
+                        submitBtn.disabled = false;
+                        idleLabel.classList.remove('d-none');
+                        loadingLabel.classList.add('d-none');
+                    }
+                });
+            });
         }
     </script>
 }
@@ -1043,19 +1277,20 @@
         width: 7%;
     }
 
+    /* 通所列：振り返りも入るので広めに確保する */
     .weekly-report-table th:nth-child(6),
     .weekly-report-table td:nth-child(6) {
-        width: 12%;
+        width: 18%;
     }
 
     .weekly-report-table th:nth-child(7),
     .weekly-report-table td:nth-child(7) {
-        width: 28%;
+        width: 24%;
     }
 
     .weekly-report-table th:nth-child(8),
     .weekly-report-table td:nth-child(8) {
-        width: 24%;
+        width: 22%;
     }
 
     .record-note {
@@ -1439,6 +1674,38 @@
     }
 
     body.print-mode .sleep-correlation-table-wrap {
+        page-break-inside: avoid;
+    }
+
+    /* 所感セクション外枠（縁付きカード）。タブ最上部で1つの塊として目立たせる */
+    .reflection-card {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+    }
+
+    /* 所感表組み：項目ラベルは固定幅、値は折返しで全文表示。表内部は通常表示。 */
+    .reflection-table {
+        background: #fff;
+    }
+    .reflection-table th {
+        font-weight: 600;
+        color: #495057;
+        white-space: nowrap;
+    }
+    .period-reflection-display {
+        margin-top: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* PDF出力時：所感は1ページ目、その直後に改ページしてレポートを新ページから始める。
+       所感が空のとき partial 自体が描画されないので余計な空白ページは出ない。 */
+    body.print-mode .period-reflection-page-break {
+        page-break-after: always;
+        margin-top: 0;
+    }
+    body.print-mode .reflection-table {
         page-break-inside: avoid;
     }
 </style>

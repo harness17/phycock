@@ -1,0 +1,44 @@
+@*
+    週次／月次の所感表示パーシャル。
+    画面表示（タブ最上部）と PDF 出力（1ページ目）で共用する。
+    未入力でも見出しは常に出し、表部分に「未入力」と表示する。
+*@
+@model Phycock.Views.Statistics.PeriodReflectionDisplayModel
+
+@{
+    var rows = new (string Label, string? Value)[]
+    {
+        ("自己評価", Model.Vm.SelfEvaluation),
+        ("負担",     Model.Vm.Burden),
+        ("改善案",   Model.Vm.Improvement),
+        ("食欲",     Model.Vm.Appetite),
+        ("睡眠",     Model.Vm.Sleep)
+    };
+}
+
+<section class="period-reflection-display @Model.ExtraClass" aria-label="@Model.Title">
+    @* 外枠は縁付きカード。所感全体をひとかたまりとして視覚的に区切る。 *@
+    <div class="reflection-card">
+        <h2 class="h5 mb-3">@Model.Title</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered align-top mb-0 reflection-table">
+                <colgroup>
+                    <col style="width: 8rem;" />
+                    <col />
+                </colgroup>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        var isEmpty = string.IsNullOrWhiteSpace(row.Value);
+                        <tr>
+                            <th scope="row" class="bg-light">@row.Label</th>
+                            <td style="white-space:normal;" class="@(isEmpty ? "text-muted fst-italic" : "")">
+                                @(isEmpty ? "未入力" : row.Value)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
