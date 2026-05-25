@@ -52,9 +52,9 @@ namespace Phycock.Models
         [Display(Name = "終了時刻")]
         public TimeOnly? EndTime { get; set; }
 
-        /// <summary>自由記入メモ。</summary>
-        [MaxLength(1000, ErrorMessage = "メモは1000文字以内で入力してください")]
-        [Display(Name = "メモ")]
+        /// <summary>振り返り（旧称: メモ）。</summary>
+        [MaxLength(1000, ErrorMessage = "振り返りは1000文字以内で入力してください")]
+        [Display(Name = "振り返り")]
         public string? Notes { get; set; }
     }
 

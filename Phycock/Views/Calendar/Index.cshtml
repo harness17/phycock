@@ -137,10 +137,12 @@
 
             $('#detailModalTitle').text((source ? source.label : '記録') + ' 詳細');
 
+            // 通所予定の自由記述は「振り返り」、それ以外（体調・睡眠）は従来通り「メモ」表記。
+            const noteLabel = props.category === 'schedule' ? '振り返り' : 'メモ';
             const rows = [
                 ['内容', props.primaryText || info.event.title],
                 ['詳細', props.secondaryText || ''],
-                ['メモ', props.noteText || '']
+                [noteLabel, props.noteText || '']
             ].filter(function (row) { return row[1]; });
 
             const $dl = $('<dl class="row mb-0"></dl>');
