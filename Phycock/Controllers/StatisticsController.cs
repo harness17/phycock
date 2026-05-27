@@ -111,6 +111,7 @@ namespace Phycock.Controllers
         {
             try
             {
+                const string loopbackHost = "127.0.0.1";
                 var isMonthly = section == "monthly";
                 var wsDate = NormalizeWeekStart(weekStart);
                 var ws = wsDate.ToString("yyyy-MM-dd");
@@ -120,19 +121,33 @@ namespace Phycock.Controllers
                 // また PathBase を含めないとサブアプリ配置で 404 になるため、現リクエストから組み立てる。
                 var pathBase = Request.PathBase.HasValue ? Request.PathBase.Value : string.Empty;
                 var printSection = isMonthly ? "monthly" : "weekly";
-                var url = $"{Request.Scheme}://{Request.Host}{pathBase}/Statistics?print=1&weekStart={ws}&section={printSection}";
-
-                // 現リクエストの認証クッキーを Playwright 用に変換（ループバックなので Secure=false）
-                var host = Request.Host.Host;
-                var pwCookies = Request.Cookies.Select(c => new PWCookie
+                // Host ヘッダーを信頼せず、同一プロセスのローカル待受ポートへ固定する。
+                // IIS 等で Host にポートが無い場合は、実際の接続先ポートをフォールバックにする。
+                var loopbackPort = Request.Host.Port ?? HttpContext.Connection.LocalPort;
+                if (loopbackPort <= 0)
                 {
-                    Name = c.Key,
-                    Value = c.Value,
-                    Domain = host,
-                    Path = "/",
-                    Secure = false,
-                    HttpOnly = true
-                }).ToList();
+                    loopbackPort = 80;
+                }
+                var url = $"http://{loopbackHost}:{loopbackPort}{pathBase}/Statistics?print=1&weekStart={ws}&section={printSection}";
+
+                // PDF表示に必要な認証Cookieだけを Playwright 用に変換（ループバックなので Secure=false）
+                var allowedCookiePrefixes = new[]
+                {
+                    ".AspNetCore.Identity.Application",
+                    ".AspNetCore.Session"
+                };
+                var pwCookies = Request.Cookies
+                    .Where(c => allowedCookiePrefixes.Any(prefix => c.Key.StartsWith(prefix, StringComparison.Ordinal)))
+                    .Select(c => new PWCookie
+                    {
+                        Name = c.Key,
+                        Value = c.Value,
+                        Domain = loopbackHost,
+                        Path = "/",
+                        Secure = false,
+                        HttpOnly = true
+                    })
+                    .ToList();
 
                 var pdfBytes = await _pdfExportService.RenderPdfAsync(url, pwCookies);
 
