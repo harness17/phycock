@@ -538,14 +538,18 @@ namespace Phycock.Service
                     .Where(x => x.Session == ScheduleSession.AM && x.Status != ScheduleStatus.Absent).ToList();
                 var pmEntries = todaySchedule
                     .Where(x => x.Session == ScheduleSession.PM && x.Status != ScheduleStatus.Absent).ToList();
-                var am = amEntries.FirstOrDefault(x => x.ActivityType != ActivityType.Private);
-                var pm = pmEntries.FirstOrDefault(x => x.ActivityType != ActivityType.Private);
+                var am = amEntries.FirstOrDefault(x => x.ActivityType != ActivityType.Private && !x.IsAtHome);
+                var pm = pmEntries.FirstOrDefault(x => x.ActivityType != ActivityType.Private && !x.IsAtHome);
+                var amRemote = amEntries.FirstOrDefault(x => x.ActivityType != ActivityType.Private && x.IsAtHome);
+                var pmRemote = pmEntries.FirstOrDefault(x => x.ActivityType != ActivityType.Private && x.IsAtHome);
                 var amPrivate = amEntries.FirstOrDefault(x => x.ActivityType == ActivityType.Private);
                 var pmPrivate = pmEntries.FirstOrDefault(x => x.ActivityType == ActivityType.Private);
                 var absent = todaySchedule.FirstOrDefault(x => x.Status == ScheduleStatus.Absent);
 
                 report.TimelineChart.ScheduleAm.Add(MakeScheduleBar(am, 9.5, 12.5));
                 report.TimelineChart.SchedulePm.Add(MakeScheduleBar(pm, 13.5, 15.5));
+                report.TimelineChart.ScheduleAmRemote.Add(MakeScheduleBar(amRemote, 9.5, 12.5));
+                report.TimelineChart.SchedulePmRemote.Add(MakeScheduleBar(pmRemote, 13.5, 15.5));
                 report.TimelineChart.ScheduleAmPrivate.Add(MakeScheduleBar(amPrivate, 9.5, 12.5));
                 report.TimelineChart.SchedulePmPrivate.Add(MakeScheduleBar(pmPrivate, 13.5, 15.5));
                 report.TimelineChart.ScheduleAbsent.Add(absent is null ? null

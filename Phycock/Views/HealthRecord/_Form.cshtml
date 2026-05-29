@@ -29,11 +29,6 @@
             </select>
             <span asp-validation-for="RecordTiming" class="text-danger"></span>
         </div>
-        <div class="col-md-4" data-health-record-custom-time-wrap>
-            <label asp-for="RecordTime" class="form-label"></label>
-            <input asp-for="RecordTime" type="time" class="form-control time-focus-input" step="60" data-health-record-custom-time />
-            <span asp-validation-for="RecordTime" class="text-danger"></span>
-        </div>
         <div class="col-md-2">
             <label asp-for="Condition" class="form-label"></label>
             <select asp-for="Condition" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.ConditionLevel>()" class="form-select"></select>
@@ -43,6 +38,11 @@
             <label asp-for="Feeling" class="form-label"></label>
             <select asp-for="Feeling" asp-items="Html.GetEnumSelectList<Phycock.Entity.Enums.FeelingLevel>()" class="form-select"></select>
             <span asp-validation-for="Feeling" class="text-danger"></span>
+        </div>
+        <div class="col-md-4" data-health-record-custom-time-wrap>
+            <label asp-for="RecordTime" class="form-label"></label>
+            <input asp-for="RecordTime" type="time" class="form-control time-focus-input" step="60" data-health-record-custom-time />
+            <span asp-validation-for="RecordTime" class="text-danger"></span>
         </div>
         <div class="col-12">
             <label class="form-label">症状</label>

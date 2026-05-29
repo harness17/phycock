@@ -240,6 +240,7 @@
                 <span class="legend-item"><span class="legend-swatch" style="background:#5B7CFA;"></span>本睡眠</span>
                 <span class="legend-item"><span class="legend-swatch" style="background:#8DD7BF;"></span>他睡眠 / 仮眠</span>
                 <span class="legend-item"><span class="legend-swatch" style="background:#F59F00;"></span>通所予定（AM / PM）</span>
+                <span class="legend-item"><span class="legend-swatch" style="background:#198754;"></span>在宅予定（AM / PM）</span>
                 <span class="legend-item"><span class="legend-swatch" style="background:@privateColor.Border;"></span>プライベート予定（AM / PM）</span>
                 <span class="legend-item"><span class="legend-swatch legend-swatch-dashed"></span>通所予定 欠席（破線）</span>
                 <span class="legend-item text-muted">※ 早退時は予定時間を短縮表示</span>
@@ -763,6 +764,8 @@
             const scheduleAm = timelineChartData.scheduleAm;
             const scheduleAbsent = timelineChartData.scheduleAbsent;
             const schedulePm = timelineChartData.schedulePm;
+            const scheduleAmRemote = timelineChartData.scheduleAmRemote;
+            const schedulePmRemote = timelineChartData.schedulePmRemote;
             const scheduleAmPrivate = timelineChartData.scheduleAmPrivate;
             const schedulePmPrivate = timelineChartData.schedulePmPrivate;
 
@@ -812,6 +815,28 @@
                         data: schedulePm,
                         backgroundColor: 'rgba(245, 159, 0, 0.85)',
                         borderColor: '#F59F00',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: '在宅 AM',
+                        data: scheduleAmRemote,
+                        backgroundColor: 'rgba(25, 135, 84, 0.85)',
+                        borderColor: '#198754',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    },
+                    {
+                        label: '在宅 PM',
+                        data: schedulePmRemote,
+                        backgroundColor: 'rgba(25, 135, 84, 0.85)',
+                        borderColor: '#198754',
                         borderWidth: 1,
                         borderRadius: 4,
                         barPercentage: 0.95,

@@ -32,21 +32,24 @@
                 </button>
                 <div class="navbar-collapse collapse d-xl-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-white" asp-controller="Calendar" asp-action="Index">カレンダー</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" asp-controller="HealthRecord" asp-action="Index">体調記録</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" asp-controller="SleepRecord" asp-action="Index">睡眠記録</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" asp-controller="ScheduleEntry" asp-action="Index">通所スケジュール</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" asp-controller="Statistics" asp-action="Index">統計</a>
-                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-white" asp-controller="Calendar" asp-action="Index">カレンダー</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-white" asp-controller="HealthRecord" asp-action="Index">体調記録</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-white" asp-controller="SleepRecord" asp-action="Index">睡眠記録</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-white" asp-controller="ScheduleEntry" asp-action="Index">通所スケジュール</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-white" asp-controller="Statistics" asp-action="Index">統計</a>
+                            </li>
+                        }
                     </ul>
                     <ul class="navbar-nav align-items-center">
                         @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
