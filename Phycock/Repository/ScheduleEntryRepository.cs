@@ -5,7 +5,7 @@ using Phycock.Entity;
 namespace Phycock.Repository
 {
     /// <summary>
-    /// リタリコワークス通所予定リポジトリ。
+    /// 通所予定リポジトリ。
     /// </summary>
     public class ScheduleEntryRepository
     {

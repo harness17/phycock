@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 概要
 
-**Phycock** は ASP.NET Core 10 MVC + SQL Server ベースの体調管理アプリです。[Phycock](https://github.com/your-org/Phycock) テンプレートをベースに開発されます。リタリコワークス通所者向けの実用ツールおよびポートフォリオプロジェクトです。
+**Phycock** は ASP.NET Core 10 MVC + SQL Server ベースの体調管理アプリです。[Phycock](https://github.com/your-org/Phycock) テンプレートをベースに開発されます。個人向け実用ツールおよびポートフォリオプロジェクトです。
 
 ## セットアップと前提条件
 
@@ -121,7 +121,7 @@ Phycock の ApprovalRequest（承認ワークフロー）は **削除**。以下
 
 // 残す
 // - Admin ロール（管理者のみスタッフユーザー追加可）
-// - Member ロール（通所者）
+// - Member ロール（ユーザー）
 // - Identity ユーザー管理
 ```
 

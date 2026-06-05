@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Phycock.Entity
 {
     /// <summary>
-    /// リタリコワークス通所予定エンティティ。
+    /// 通所予定エンティティ。
     /// </summary>
     [Table("ScheduleEntry")]
     public class ScheduleEntryEntity : PhycockEntityBase

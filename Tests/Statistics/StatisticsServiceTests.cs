@@ -89,5 +89,35 @@ namespace Tests.Statistics
             var day = Assert.Single(result.Days, x => x.Date == new DateTime(2026, 5, 3));
             Assert.Equal(new[] { "07:15", "訓練開始時" }, day.HealthRecords.Select(x => x.TimingLabel));
         }
+
+        [Fact]
+        public void GetWeeklyReport_AllDayScheduleUsesSingleTimelineBar()
+        {
+            var healthRepository = new Mock<HealthRecordRepository>(null!);
+            var sleepRepository = new Mock<SleepRecordRepository>(null!);
+            var scheduleRepository = new Mock<ScheduleEntryRepository>(null!);
+            healthRepository.Setup(x => x.GetByUserAndRange("user-1", It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Returns(new List<HealthRecordEntity>());
+            sleepRepository.Setup(x => x.GetByUserAndRange("user-1", It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Returns(new List<SleepRecordEntity>());
+            scheduleRepository.Setup(x => x.GetByUserAndRange("user-1", It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
+                .Returns(new List<ScheduleEntryEntity>
+                {
+                    new()
+                    {
+                        UserId = "user-1",
+                        Date = new DateOnly(2026, 5, 3),
+                        Session = ScheduleSession.AllDay,
+                        Status = ScheduleStatus.Planned,
+                        ActivityType = ActivityType.Program,
+                    },
+                });
+            var service = new StatisticsService(healthRepository.Object, sleepRepository.Object, scheduleRepository.Object);
+
+            var result = service.GetWeeklyReport("user-1", new DateTime(2026, 5, 3));
+
+            Assert.Equal(new double?[] { 9.5, 15.5 }, result.TimelineChart.ScheduleAm[0]);
+            Assert.Null(result.TimelineChart.SchedulePm[0]);
+        }
     }
 }

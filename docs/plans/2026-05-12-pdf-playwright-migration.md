@@ -8,7 +8,7 @@
 
 ## 背景・決定理由
 
-- QuestPDF Community ライセンスの商用利用可否が不明（リタリコ案件の契約形態次第）
+- QuestPDF Community ライセンスの商用利用可否が不明（プロジェクトの契約形態次第）
 - Linux 本番（Azure App Service / Railway）でフォント豆腐が発生する
 - 既存の HTML/Chart.js ベースの統計画面を帳票にそのまま使えるため二重管理が不要
 - Chromium が日本語フォントを処理するため CJK 問題が消える

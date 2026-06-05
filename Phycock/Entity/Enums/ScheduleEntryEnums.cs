@@ -97,37 +97,37 @@ namespace Phycock.Entity.Enums
     }
 
     /// <summary>
-    /// リタリコワークスのプログラム種別。
+    /// プログラム種別。
     /// </summary>
     public enum ProgramType
     {
-        /// <summary>セルフワーク。</summary>
-        [Display(Name = "自分らしく働く")]
+        /// <summary>プログラム1。</summary>
+        [Display(Name = "1.")]
         [CalendarColor("#F8CBAD", "#C55A11", "#4A2300")]
         SelfWork = 0,
 
-        /// <summary>健康管理。</summary>
-        [Display(Name = "ヘルスケア")]
+        /// <summary>プログラム2。</summary>
+        [Display(Name = "2.")]
         [CalendarColor("#E2F0D9", "#70AD47", "#254D1B")]
         HealthCare = 1,
 
-        /// <summary>職場コミュニケーション。</summary>
-        [Display(Name = "職場でのコミュニケーション")]
+        /// <summary>プログラム3。</summary>
+        [Display(Name = "3.")]
         [CalendarColor("#E4DFEC", "#8064A2", "#3D2A56")]
         WorkplaceCommunication = 2,
 
-        /// <summary>就職活動。</summary>
-        [Display(Name = "就職活動")]
+        /// <summary>プログラム4。</summary>
+        [Display(Name = "4.")]
         [CalendarColor("#DDEBF7", "#5B9BD5", "#1F4E79")]
         JobHunting = 3,
 
-        /// <summary>応募・面接。</summary>
-        [Display(Name = "応募・面接")]
+        /// <summary>プログラム5。</summary>
+        [Display(Name = "5.")]
         [CalendarColor("#F4CCCC", "#C00000", "#7F1D1D")]
         ApplicationInterview = 4,
 
-        /// <summary>就労準備。</summary>
-        [Display(Name = "就労前の準備")]
+        /// <summary>プログラム6。</summary>
+        [Display(Name = "6.")]
         [CalendarColor("#DDEBF7", "#2F75B5", "#1F4E79")]
         PreWorkPreparation = 5,
 

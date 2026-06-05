@@ -56,8 +56,12 @@ tmp/
 # Generated PDF artifacts
 docs/*.pdf
 
-# 社内向け説明資料（リタリコ本社向け等・内部資料のため Git 管理対象外）
+# 内部説明資料（非公開）
 docs/internal/
+
+# 開発内部ログ（個人データ・実運用データを含む可能性があるため非公開）
+CLAUDE_CODE_HANDOFF.md
+docs/plans/2026-05-22-health-report-analysis-feedback.md
 
 # Local scheduled task lock
 .claude/scheduled_tasks.lock
