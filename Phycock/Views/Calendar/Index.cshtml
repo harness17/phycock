@@ -47,6 +47,28 @@
             schedule: { label: '通所スケジュール', url: '@Url.Action("GetEvents", "ScheduleEntry")' }
         };
 
+        // ヒートマップ色マッピング（半透明）
+        const heatmapColors = {
+            1: 'rgba(239, 83, 80, 0.2)',   // VeryBad
+            2: 'rgba(255, 152, 0, 0.2)',   // Bad
+            3: 'rgba(255, 238, 88, 0.2)',  // Normal
+            4: 'rgba(156, 204, 101, 0.2)', // Good
+            5: 'rgba(102, 187, 106, 0.2)', // VeryGood
+        };
+
+        let heatmapData = {};
+
+        function fetchHeatmap(start, end) {
+            const url = '@Url.Action("HeatmapData", "HealthRecord")';
+            $.get(url, { start: start, end: end }).done(function (data) {
+                heatmapData = {};
+                (data || []).forEach(function (d) { heatmapData[d.date] = d.level; });
+                if (window._phycockCalendar) {
+                    window._phycockCalendar.render();
+                }
+            });
+        }
+
         // 体調記録の並び順キー（サーバーが付与する SortOrder＝タイミング識別子）
         const SORT_WAKE = 360;        // 起床時
         const SORT_TRAIN_START = 510; // 訓練開始時
@@ -176,16 +198,32 @@
                 eventOrder: 'sortOrder,start,title',
                 eventContent: PhycockCalendar.renderRecordEvent,
                 eventDidMount: PhycockCalendar.applyEventColors,
+                dayCellDidMount: function (info) {
+                    if (!document.getElementById('toggleHealth').checked) return;
+                    var key = info.date.toISOString().substring(0, 10);
+                    var level = heatmapData[key];
+                    if (level && heatmapColors[level]) {
+                        info.el.style.backgroundColor = heatmapColors[level];
+                    }
+                },
+                datesSet: function (info) {
+                    fetchHeatmap(info.startStr, info.endStr);
+                },
                 eventClick: function (info) {
                     info.jsEvent.preventDefault();
                     showUnifiedDetail(info);
                 }
             });
+            window._phycockCalendar = calendar;
             calendar.render();
 
             document.querySelectorAll('.form-check-input[data-source]').forEach(function (checkbox) {
                 checkbox.addEventListener('change', function () {
                     calendar.refetchEvents();
+                    if (checkbox.dataset.source === 'health' && !checkbox.checked) {
+                        heatmapData = {};
+                    }
+                    calendar.render();
                 });
             });
         });
