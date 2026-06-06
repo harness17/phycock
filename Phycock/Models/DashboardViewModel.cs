@@ -1,3 +1,5 @@
+using Phycock.Entity.Enums;
+
 namespace Phycock.Models
 {
     /// <summary>
@@ -13,6 +15,18 @@ namespace Phycock.Models
 
         /// <summary>直近7日分の体調・睡眠サマリー。</summary>
         public WeeklySummaryDto WeeklySummary { get; set; } = new();
+
+        /// <summary>今日の睡眠記録があるかどうか。</summary>
+        public bool HasSleepRecord { get; set; }
+
+        /// <summary>直近の体調レベル（今日の最新記録）。記録なしは null。</summary>
+        public ConditionLevel? LatestCondition { get; set; }
+
+        /// <summary>直近の気分レベル（今日の最新記録）。記録なしは null。</summary>
+        public FeelingLevel? LatestFeeling { get; set; }
+
+        /// <summary>データ取得に失敗したかどうか。true の場合チェックリストは unavailable 表示。</summary>
+        public bool IsUnavailable { get; set; }
     }
 
     /// <summary>
