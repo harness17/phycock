@@ -28,9 +28,20 @@ namespace Phycock.Controllers
             var userId = User.IsInRole("Admin")
                 ? await _userManagementService.GetSelectedMemberUserIdAsync()
                 : GetCurrentUserId();
-            var vm = string.IsNullOrWhiteSpace(userId)
-                ? new DashboardViewModel()
-                : _dashboardService.GetDashboard(userId, User.IsInRole("Admin"));
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return View(new DashboardViewModel());
+
+            DashboardViewModel vm;
+            try
+            {
+                vm = _dashboardService.GetDashboard(userId, User.IsInRole("Admin"));
+            }
+            catch (Exception)
+            {
+                vm = new DashboardViewModel { IsUnavailable = true };
+            }
+
             return View(vm);
         }
 
