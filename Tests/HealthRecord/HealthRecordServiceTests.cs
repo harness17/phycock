@@ -336,5 +336,40 @@ namespace Tests.HealthRecord
 
             Assert.Equal(new[] { RecordTiming.Noon }, result);
         }
+
+        [Fact]
+        public void GetHeatmapData_ReturnsMinConditionPerDay()
+        {
+            var repo = new Mock<HealthRecordRepository>(null!);
+            repo.Setup(x => x.GetByUserAndRange("user-1", It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Returns(new List<HealthRecordEntity>
+                {
+                    new() { UserId = "user-1", RecordDate = new DateTime(2026, 6, 1), Condition = ConditionLevel.Good, Feeling = FeelingLevel.Normal },
+                    new() { UserId = "user-1", RecordDate = new DateTime(2026, 6, 1), Condition = ConditionLevel.Bad, Feeling = FeelingLevel.Normal },
+                    new() { UserId = "user-1", RecordDate = new DateTime(2026, 6, 2), Condition = ConditionLevel.VeryGood, Feeling = FeelingLevel.Good },
+                });
+            var service = new HealthRecordService(repo.Object);
+
+            var result = service.GetHeatmapData("user-1", new DateTime(2026, 6, 1), new DateTime(2026, 6, 7));
+
+            Assert.Equal(2, result.Count);
+            // 6/1 は Good(4) と Bad(2) → 最低値 Bad(2)
+            Assert.Equal(2, result.First(x => x.Date == "2026-06-01").Level);
+            // 6/2 は VeryGood(5) のみ
+            Assert.Equal(5, result.First(x => x.Date == "2026-06-02").Level);
+        }
+
+        [Fact]
+        public void GetHeatmapData_NoRecords_ReturnsEmptyList()
+        {
+            var repo = new Mock<HealthRecordRepository>(null!);
+            repo.Setup(x => x.GetByUserAndRange("user-1", It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Returns(new List<HealthRecordEntity>());
+            var service = new HealthRecordService(repo.Object);
+
+            var result = service.GetHeatmapData("user-1", new DateTime(2026, 6, 1), new DateTime(2026, 6, 7));
+
+            Assert.Empty(result);
+        }
     }
 }
