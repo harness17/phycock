@@ -213,7 +213,7 @@ namespace Phycock.Models
         // 各日に対する [start, end] の時間帯。null は該当無し。
         public List<double?[]?> NightSleepEarly { get; set; } = new();   // 当日午前 0~起床
         public List<double?[]?> NightSleepLate { get; set; } = new();    // 当日深夜 ~24
-        public List<double?[]?> OtherSleep { get; set; } = new();
+        public List<List<double[]>> OtherSleep { get; set; } = new();
         public List<double?[]?> ScheduleAm { get; set; } = new();
         public List<double?[]?> SchedulePm { get; set; } = new();
         public List<double?[]?> ScheduleAmRemote { get; set; } = new();

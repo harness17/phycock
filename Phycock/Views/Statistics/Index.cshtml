@@ -767,7 +767,7 @@
             const labels = timelineChartData.labels;
             const nightSleepEarly = timelineChartData.nightSleepEarly;
             const nightSleepLate = timelineChartData.nightSleepLate;
-            const otherSleep = timelineChartData.otherSleep;
+            const otherSleepRaw = timelineChartData.otherSleep;
             const scheduleAm = timelineChartData.scheduleAm;
             const scheduleAbsent = timelineChartData.scheduleAbsent;
             const schedulePm = timelineChartData.schedulePm;
@@ -775,6 +775,20 @@
             const schedulePmRemote = timelineChartData.schedulePmRemote;
             const scheduleAmPrivate = timelineChartData.scheduleAmPrivate;
             const schedulePmPrivate = timelineChartData.schedulePmPrivate;
+
+            const maxNaps = Math.max(...otherSleepRaw.map(d => d.length), 1);
+            const otherSleepDatasets = [];
+            for (let n = 0; n < maxNaps; n++) {
+                otherSleepDatasets.push({
+                    label: '他睡眠 / 仮眠',
+                    data: otherSleepRaw.map(d => d.length > n ? d[n] : null),
+                    backgroundColor: '#8DD7BF',
+                    borderRadius: 4,
+                    barPercentage: 0.95,
+                    categoryPercentage: 0.95,
+                    grouped: false
+                });
+            }
 
             const data = {
                 labels: labels,
@@ -797,15 +811,7 @@
                         categoryPercentage: 0.95,
                         grouped: false
                     },
-                    {
-                        label: '他睡眠 / 仮眠',
-                        data: otherSleep,
-                        backgroundColor: '#8DD7BF',
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
+                    ...otherSleepDatasets,
                     {
                         label: '通所 AM',
                         data: scheduleAm,
