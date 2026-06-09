@@ -33,11 +33,18 @@ namespace Phycock.Service
                 weeklySummary.StartDate,
                 weeklySummary.EndDate);
 
+            var todayHealthRecords = _healthRecordService.GetTodaySummary(userId);
+            var todaySleepRecords = _sleepRecordService.GetList(userId, DateTime.Today);
+            var latestRecord = todayHealthRecords.Count > 0 ? todayHealthRecords[^1] : null;
+
             return new DashboardViewModel
             {
                 TodayScheduleEntries = _scheduleEntryService.GetTodayEntries(userId),
-                TodayHealthRecords = _healthRecordService.GetTodaySummary(userId),
+                TodayHealthRecords = todayHealthRecords,
                 WeeklySummary = weeklySummary,
+                HasSleepRecord = todaySleepRecords.Count > 0,
+                LatestCondition = latestRecord?.Condition,
+                LatestFeeling = latestRecord?.Feeling,
             };
         }
     }

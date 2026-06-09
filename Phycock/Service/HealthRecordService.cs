@@ -173,6 +173,22 @@ namespace Phycock.Service
             };
         }
 
+        /// <summary>ヒートマップ用の日別体調レベル集計を返す。各日の最低 ConditionLevel を代表値とする。</summary>
+        public List<HeatmapDayDto> GetHeatmapData(string userId, DateTime startDate, DateTime endDate)
+        {
+            if (string.IsNullOrWhiteSpace(userId) || endDate <= startDate) return new List<HeatmapDayDto>();
+
+            return _repository.GetByUserAndRange(userId, startDate, endDate.AddDays(-1))
+                .GroupBy(x => x.RecordDate.Date)
+                .Select(g => new HeatmapDayDto
+                {
+                    Date = g.Key.ToString("yyyy-MM-dd"),
+                    Level = (int)g.Min(x => x.Condition),
+                })
+                .OrderBy(x => x.Date)
+                .ToList();
+        }
+
         /// <summary>バリデーション再表示用の補完処理。</summary>
         public HealthRecordFormViewModel FillSelections(HealthRecordFormViewModel model)
         {

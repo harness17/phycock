@@ -100,6 +100,42 @@ namespace Phycock.Controllers
         }
 
         /// <summary>
+        /// 週次トレンドデータを JSON で返す。前週/次週の期間移動 UI 用。
+        /// 既存 GetHealthWeekly + GetWeeklySleepStats を1回のリクエストにまとめた API。
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> TrendData(DateTime weekStart)
+        {
+            try
+            {
+                var ws = NormalizeWeekStart(weekStart);
+                var today = DateTime.Today;
+                if (ws < today.AddDays(-365) || ws > today.AddDays(365))
+                {
+                    return BadRequest(new { error = "weekStart は今日から ±365 日以内で指定してください。" });
+                }
+
+                var userId = await ResolveTargetUserIdAsync();
+                var health = _service.GetWeeklyHealthStats(userId, ws);
+                var sleep = _service.GetWeeklySleepStats(userId, ws);
+
+                return Json(new
+                {
+                    weekStart = ws.ToString("yyyy-MM-dd"),
+                    labels = health.Labels,
+                    condition = health.ConditionData,
+                    feeling = health.FeelingData,
+                    sleepHours = sleep.SleepHoursData,
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(new LogModel($"TrendData の取得中にエラーが発生しました。weekStart={weekStart:O}"), ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { error = DatabaseErrorMessage });
+            }
+        }
+
+        /// <summary>
         /// 週次統計レポートを PDF として出力する。
         /// </summary>
         /// <remarks>

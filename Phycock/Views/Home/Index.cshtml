@@ -1,4 +1,5 @@
 @model Phycock.Models.DashboardViewModel
+@using Phycock.Common
 @{
     ViewData["Title"] = "ホーム";
 }
@@ -13,6 +14,49 @@
         <a asp-controller="SleepRecord" asp-action="Create" class="btn btn-outline-primary"><i class="fas fa-bed me-1"></i>睡眠記録</a>
     </div>
 </div>
+
+@if (Model.IsUnavailable)
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle me-1"></i>データの取得に失敗しました。しばらく後に再読み込みしてください。
+    </div>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title mb-3">今日のチェックリスト</h5>
+            <ul class="list-unstyled mb-0">
+                <li class="mb-1">
+                    @(Model.TodayHealthRecords.Any() ? "✅" : "⬜") 体調記録
+                </li>
+                <li class="mb-1">
+                    @(Model.HasSleepRecord ? "✅" : "⬜") 睡眠記録
+                </li>
+                <li class="mb-1">
+                    @if (Model.TodayScheduleEntries.Any())
+                    {
+                        <text>✅ 通所予定</text>
+                    }
+                    else
+                    {
+                        <span class="text-muted">🔘 通所予定（休日）</span>
+                    }
+                </li>
+            </ul>
+            @if (Model.LatestCondition.HasValue)
+            {
+                <div class="mt-2 small text-muted">
+                    直近の体調: @Model.LatestCondition.Value.GetDisplayName()
+                    @if (Model.LatestFeeling.HasValue)
+                    {
+                        <text> / 気分: @Model.LatestFeeling.Value.GetDisplayName()</text>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
 
 <div class="row mt-4">
     <div class="col-lg-4 mb-3">

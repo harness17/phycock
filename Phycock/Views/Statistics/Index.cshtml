@@ -52,7 +52,13 @@
 <div class="statistics-toolbar d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h1 class="h3 mb-0">統計</h1>
     <div class="d-flex gap-2 align-items-center">
+        <button id="prevWeek" type="button" class="btn btn-outline-secondary text-nowrap" title="前週">
+            <i class="fas fa-chevron-left"></i>
+        </button>
         <input id="weekStart" type="date" class="form-control" />
+        <button id="nextWeek" type="button" class="btn btn-outline-secondary text-nowrap" title="次週">
+            <i class="fas fa-chevron-right"></i>
+        </button>
         <button id="reloadStats" type="button" class="btn btn-outline-primary text-nowrap">更新</button>
         <button id="exportPdf" type="button" class="btn btn-outline-secondary text-nowrap">
             <span class="pdf-export-idle">
@@ -502,6 +508,7 @@
         const isPrintMode = @(isPrint ? "true" : "false");
         const printSection = '@printSection';
         const currentWeekStart = '@weekStartIso';
+        const currentMonthStart = '@monthStartIso';
         // サーバー側（DBデータ）から注入するチャート用データ
         const reportChartData = @Html.Raw(Json.Serialize(report.ReportChart));
         const timelineChartData = @Html.Raw(Json.Serialize(report.TimelineChart));
@@ -760,7 +767,7 @@
             const labels = timelineChartData.labels;
             const nightSleepEarly = timelineChartData.nightSleepEarly;
             const nightSleepLate = timelineChartData.nightSleepLate;
-            const otherSleep = timelineChartData.otherSleep;
+            const otherSleepRaw = timelineChartData.otherSleep;
             const scheduleAm = timelineChartData.scheduleAm;
             const scheduleAbsent = timelineChartData.scheduleAbsent;
             const schedulePm = timelineChartData.schedulePm;
@@ -768,6 +775,20 @@
             const schedulePmRemote = timelineChartData.schedulePmRemote;
             const scheduleAmPrivate = timelineChartData.scheduleAmPrivate;
             const schedulePmPrivate = timelineChartData.schedulePmPrivate;
+
+            const maxNaps = Math.max(...otherSleepRaw.map(d => d.length), 1);
+            const otherSleepDatasets = [];
+            for (let n = 0; n < maxNaps; n++) {
+                otherSleepDatasets.push({
+                    label: '他睡眠 / 仮眠',
+                    data: otherSleepRaw.map(d => d.length > n ? d[n] : null),
+                    backgroundColor: '#8DD7BF',
+                    borderRadius: 4,
+                    barPercentage: 0.95,
+                    categoryPercentage: 0.95,
+                    grouped: false
+                });
+            }
 
             const data = {
                 labels: labels,
@@ -790,15 +811,7 @@
                         categoryPercentage: 0.95,
                         grouped: false
                     },
-                    {
-                        label: '他睡眠 / 仮眠',
-                        data: otherSleep,
-                        backgroundColor: '#8DD7BF',
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
+                    ...otherSleepDatasets,
                     {
                         label: '通所 AM',
                         data: scheduleAm,
@@ -992,6 +1005,42 @@
                 window.location.href = '@Url.Action("Index", "Statistics")'
                     + '?weekStart=' + encodeURIComponent(wsParam) + '&tab=' + tab;
             });
+            document.getElementById('prevWeek')?.addEventListener('click', function () {
+                const activeTab = document.querySelector('.nav-tabs .nav-link.active');
+                const isMonthly = activeTab?.dataset.bsTarget === '#monthly';
+                const current = isMonthly ? currentMonthStart : document.getElementById('weekStart').value;
+                if (!current) return;
+                const d = new Date(current + 'T00:00:00');
+                if (isMonthly) {
+                    d.setMonth(d.getMonth() - 1);
+                } else {
+                    d.setDate(d.getDate() - 7);
+                }
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                document.getElementById('weekStart').value = `${y}-${m}-${day}`;
+                document.getElementById('reloadStats').click();
+            });
+
+            document.getElementById('nextWeek')?.addEventListener('click', function () {
+                const activeTab = document.querySelector('.nav-tabs .nav-link.active');
+                const isMonthly = activeTab?.dataset.bsTarget === '#monthly';
+                const current = isMonthly ? currentMonthStart : document.getElementById('weekStart').value;
+                if (!current) return;
+                const d = new Date(current + 'T00:00:00');
+                if (isMonthly) {
+                    d.setMonth(d.getMonth() + 1);
+                } else {
+                    d.setDate(d.getDate() + 7);
+                }
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                document.getElementById('weekStart').value = `${y}-${m}-${day}`;
+                document.getElementById('reloadStats').click();
+            });
+
             // PDF出力: アクティブなタブ（週次/月次）に応じて出力対象を切り替える
             $('#exportPdf').on('click', async function () {
                 const button = this;
@@ -1056,6 +1105,20 @@
                     setLoading(false);
                 }
             });
+            // タブ切替時にボタンタイトルを更新（週次=前週/次週、月次=前月/次月）
+            document.querySelectorAll('.nav-tabs .nav-link').forEach(function (tabBtn) {
+                tabBtn.addEventListener('shown.bs.tab', function () {
+                    const isMonthly = tabBtn.dataset.bsTarget === '#monthly';
+                    document.getElementById('prevWeek').title = isMonthly ? '前月' : '前週';
+                    document.getElementById('nextWeek').title = isMonthly ? '次月' : '次週';
+                });
+            });
+            // 初期表示が月次タブの場合もタイトルを設定
+            if (document.querySelector('.nav-tabs .nav-link.active')?.dataset.bsTarget === '#monthly') {
+                document.getElementById('prevWeek').title = '前月';
+                document.getElementById('nextWeek').title = '次月';
+            }
+
             createWeeklyReportSampleChart();
             createWeeklyTimelineSampleChart();
             createMonthlyReportChart();

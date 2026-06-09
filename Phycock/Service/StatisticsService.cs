@@ -518,19 +518,17 @@ namespace Phycock.Service
                 report.TimelineChart.NightSleepEarly.Add(earlyEnd.HasValue ? new double?[] { earlyStart, earlyEnd } : null);
                 report.TimelineChart.NightSleepLate.Add(lateEnd.HasValue ? new double?[] { lateStart, lateEnd } : null);
 
-                // 他睡眠（仮眠等）：当日内で複数あれば最初の1件を表示
-                var otherFirst = allSleep
+                var otherBars = allSleep
                     .Where(x => x.SleepType != SleepType.NightSleep && x.EndDate.HasValue
-                                && x.StartDate >= dayStart && x.EndDate!.Value <= dayEnd)
+                                && x.StartDate < dayEnd && x.EndDate!.Value > dayStart)
                     .OrderBy(x => x.StartDate)
-                    .FirstOrDefault();
-                report.TimelineChart.OtherSleep.Add(otherFirst is not null
-                    ? new double?[]
+                    .Select(x => new double[]
                     {
-                        (otherFirst.StartDate - dayStart).TotalHours,
-                        (otherFirst.EndDate!.Value - dayStart).TotalHours
-                    }
-                    : null);
+                        Math.Max((x.StartDate - dayStart).TotalHours, 0),
+                        Math.Min((x.EndDate!.Value - dayStart).TotalHours, 24)
+                    })
+                    .ToList();
+                report.TimelineChart.OtherSleep.Add(otherBars);
 
                 // スケジュール: 当日分のうち AM/PM、欠席分は別系列で破線表示
                 var todaySchedule = allSchedule.Where(x => x.Date == DateOnly.FromDateTime(day)).ToList();

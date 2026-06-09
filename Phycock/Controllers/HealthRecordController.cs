@@ -55,6 +55,25 @@ namespace Phycock.Controllers
             return Json(_service.GetEventsForCalendar(userId, start, end));
         }
 
+        /// <summary>
+        /// ヒートマップ用の日別体調レベルデータを返す。
+        /// start〜end の範囲は最大42日（FullCalendar 月表示 = 最大6週）。
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> HeatmapData(DateTime start, DateTime end)
+        {
+            if ((end - start).TotalDays > 42)
+            {
+                return BadRequest(new { error = "取得範囲は最大42日です。" });
+            }
+
+            var userId = User.IsInRole("Admin")
+                ? await _userManagementService.GetSelectedMemberUserIdAsync()
+                : GetCurrentUserId();
+
+            return Json(_service.GetHeatmapData(userId, start, end));
+        }
+
         [HttpGet]
         public async Task<IActionResult> Create(DateTime? recordDate)
         {
