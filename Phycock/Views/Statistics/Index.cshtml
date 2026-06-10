@@ -790,6 +790,25 @@
                 });
             }
 
+            function createScheduleDatasets(label, rawData, backgroundColor, borderColor, borderWidth = 1) {
+                const maxEntries = Math.max(...rawData.map(d => d.length), 1);
+                const datasets = [];
+                for (let n = 0; n < maxEntries; n++) {
+                    datasets.push({
+                        label: label,
+                        data: rawData.map(d => d.length > n ? d[n] : null),
+                        backgroundColor: backgroundColor,
+                        borderColor: borderColor,
+                        borderWidth: borderWidth,
+                        borderRadius: 4,
+                        barPercentage: 0.95,
+                        categoryPercentage: 0.95,
+                        grouped: false
+                    });
+                }
+                return datasets;
+            }
+
             const data = {
                 labels: labels,
                 datasets: [
@@ -812,82 +831,13 @@
                         grouped: false
                     },
                     ...otherSleepDatasets,
-                    {
-                        label: '通所 AM',
-                        data: scheduleAm,
-                        backgroundColor: 'rgba(245, 159, 0, 0.85)',
-                        borderColor: '#F59F00',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
-                    {
-                        label: '通所 PM',
-                        data: schedulePm,
-                        backgroundColor: 'rgba(245, 159, 0, 0.85)',
-                        borderColor: '#F59F00',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
-                    {
-                        label: '在宅 AM',
-                        data: scheduleAmRemote,
-                        backgroundColor: 'rgba(25, 135, 84, 0.85)',
-                        borderColor: '#198754',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
-                    {
-                        label: '在宅 PM',
-                        data: schedulePmRemote,
-                        backgroundColor: 'rgba(25, 135, 84, 0.85)',
-                        borderColor: '#198754',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
-                    {
-                        label: 'プライベート AM',
-                        data: scheduleAmPrivate,
-                        backgroundColor: '@privateColor.Border',
-                        borderColor: '@privateColor.Border',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
-                    {
-                        label: 'プライベート PM',
-                        data: schedulePmPrivate,
-                        backgroundColor: '@privateColor.Border',
-                        borderColor: '@privateColor.Border',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    },
-                    {
-                        label: '通所 欠席',
-                        data: scheduleAbsent,
-                        backgroundColor: 'rgba(245, 159, 0, 0.10)',
-                        borderWidth: 0,
-                        borderRadius: 4,
-                        barPercentage: 0.95,
-                        categoryPercentage: 0.95,
-                        grouped: false
-                    }
+                    ...createScheduleDatasets('通所 AM', scheduleAm, 'rgba(245, 159, 0, 0.85)', '#F59F00'),
+                    ...createScheduleDatasets('通所 PM', schedulePm, 'rgba(245, 159, 0, 0.85)', '#F59F00'),
+                    ...createScheduleDatasets('在宅 AM', scheduleAmRemote, 'rgba(25, 135, 84, 0.85)', '#198754'),
+                    ...createScheduleDatasets('在宅 PM', schedulePmRemote, 'rgba(25, 135, 84, 0.85)', '#198754'),
+                    ...createScheduleDatasets('プライベート AM', scheduleAmPrivate, '@privateColor.Border', '@privateColor.Border'),
+                    ...createScheduleDatasets('プライベート PM', schedulePmPrivate, '@privateColor.Border', '@privateColor.Border'),
+                    ...createScheduleDatasets('通所 欠席', scheduleAbsent, 'rgba(245, 159, 0, 0.10)', '#F59F00', 0)
                 ]
             };
 

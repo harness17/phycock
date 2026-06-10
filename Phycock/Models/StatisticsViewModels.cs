@@ -214,13 +214,13 @@ namespace Phycock.Models
         public List<double?[]?> NightSleepEarly { get; set; } = new();   // 当日午前 0~起床
         public List<double?[]?> NightSleepLate { get; set; } = new();    // 当日深夜 ~24
         public List<List<double[]>> OtherSleep { get; set; } = new();
-        public List<double?[]?> ScheduleAm { get; set; } = new();
-        public List<double?[]?> SchedulePm { get; set; } = new();
-        public List<double?[]?> ScheduleAmRemote { get; set; } = new();
-        public List<double?[]?> SchedulePmRemote { get; set; } = new();
-        public List<double?[]?> ScheduleAmPrivate { get; set; } = new();
-        public List<double?[]?> SchedulePmPrivate { get; set; } = new();
-        public List<double?[]?> ScheduleAbsent { get; set; } = new();
+        public List<List<double[]>> ScheduleAm { get; set; } = new();
+        public List<List<double[]>> SchedulePm { get; set; } = new();
+        public List<List<double[]>> ScheduleAmRemote { get; set; } = new();
+        public List<List<double[]>> SchedulePmRemote { get; set; } = new();
+        public List<List<double[]>> ScheduleAmPrivate { get; set; } = new();
+        public List<List<double[]>> SchedulePmPrivate { get; set; } = new();
+        public List<List<double[]>> ScheduleAbsent { get; set; } = new();
     }
 
     /// <summary>
