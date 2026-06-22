@@ -210,7 +210,12 @@ namespace Phycock.Service
             user.LockoutEnd = DisabledLockoutEnd;
             user.AccessFailedCount = 0;
 
-            return await _userManager.UpdateAsync(user);
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded) return result;
+
+            // DB側のSecurityStampを更新し、次の検証間隔で既存Cookieを無効化する
+            await _userManager.UpdateSecurityStampAsync(user);
+            return result;
         }
 
         /// <summary>
